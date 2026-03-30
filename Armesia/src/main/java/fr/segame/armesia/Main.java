@@ -6,9 +6,7 @@ import fr.segame.armesia.commands.*;
 import fr.segame.armesia.listeners.BlockListener;
 import fr.segame.armesia.listeners.KillListener;
 import fr.segame.armesia.listeners.PlayersListeners;
-import fr.segame.armesia.managers.EconomyManager;
-import fr.segame.armesia.managers.GroupManager;
-import fr.segame.armesia.managers.StatsManager;
+import fr.segame.armesia.managers.*;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -28,6 +26,9 @@ public final class Main extends JavaPlugin {
     public static EconomyManager economyManager;
     private EconomyAPI economyAPI;
     private StatsAPI statsAPI;
+
+    private PlayerManager playerManager;
+    private LevelManager levelManager;
 
     // 🔥 players.yml
     private File playersFile;
@@ -70,10 +71,13 @@ public final class Main extends JavaPlugin {
         statsManager = new StatsManager(playersConfig);
         statsAPI = new StatsAPI(statsManager);
 
+        playerManager = new PlayerManager();
+        levelManager = new LevelManager(playerManager);
+
         getLogger().info("Armesia démarre !");
 
         PluginManager pluginManager = Bukkit.getPluginManager();
-        pluginManager.registerEvents(new KillListener(statsManager, economyManager), this);
+        pluginManager.registerEvents(new KillListener(this, statsManager, economyManager), this);
         pluginManager.registerEvents(new PlayersListeners(), this);
         pluginManager.registerEvents(new BlockListener(), this);
 
@@ -108,6 +112,14 @@ public final class Main extends JavaPlugin {
 
     public static Main getInstance() {
         return instance;
+    }
+
+    public PlayerManager getPlayerManager() {
+        return playerManager;
+    }
+
+    public LevelManager getLevelManager() {
+        return levelManager;
     }
 
     public static StatsManager getStatsManager() {

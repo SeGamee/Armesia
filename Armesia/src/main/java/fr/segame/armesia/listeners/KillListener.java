@@ -1,5 +1,7 @@
 package fr.segame.armesia.listeners;
 
+import fr.segame.armesia.Main;
+import fr.segame.armesia.managers.LevelManager;
 import fr.segame.armesia.managers.StatsManager;
 import fr.segame.armesia.managers.EconomyManager;
 import org.bukkit.Bukkit;
@@ -16,14 +18,16 @@ public class KillListener implements Listener {
 
     private final StatsManager statsManager;
     private final EconomyManager economyManager;
-
+    private final Main plugin;
+    
     // Anti farm
     private final Map<UUID, Long> lastKills = new HashMap<>();
 
     // Streak rewards
     private final Map<Integer, Integer> streakRewards = new HashMap<>();
 
-    public KillListener(StatsManager statsManager, EconomyManager economyManager) {
+    public KillListener(Main plugin, StatsManager statsManager, EconomyManager economyManager) {
+        this.plugin = plugin;
         this.statsManager = statsManager;
         this.economyManager = economyManager;
 
@@ -65,6 +69,10 @@ public class KillListener implements Listener {
 
         // ===== KILL =====
         statsManager.addKill(killerUUID);
+
+        plugin.getLevelManager().addXP(killer.getUniqueId(), 100);
+
+        killer.sendMessage("§aKill enregistré ! +100 XP");
 
         // ===== STREAK =====
         statsManager.addKillstreak(killerUUID);
