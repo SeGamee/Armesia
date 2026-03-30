@@ -1,0 +1,6 @@
+groups: {}
+players: {}
+jobs:
+  - "Citoyen"
+task:
+  seconds: 10

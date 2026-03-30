@@ -1,0 +1,4 @@
+rootProject.name = 'Armesia'
+
+include 'Armesia'
+include 'Armesia-Scoreboard'

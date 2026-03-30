@@ -1,0 +1,73 @@
+name: Armesia
+version: '1.0'
+main: fr.segame.armesia.Main
+api-version: '1.20'
+author: "SeGame"
+commands:
+  heal:
+    description: "Se soigner"
+    permission: "armesia.heal"
+    permission-message: "§cVous n'avez pas la permission."
+  feed:
+    description: "Se rassasier"
+    permission: "armesia.feed"
+    permission-message: "§cVous n'avez pas la permission."
+  suicide:
+    description: "Se suicider"
+    permission: "armesia.suicide"
+    permission-message: "§cVous n'avez pas la permission."
+  kill:
+    description: "Tuer un joueur"
+    permission: "armesia.kill"
+    permission-message: "§cVous n'avez pas la permission."
+  cleareffect:
+    description: "Supprimer les effets de potion actifs"
+    permission: "armesia.cleareffect"
+    permission-message: "§cVous n'avez pas la permission."
+    aliases:
+      - "ce"
+  broadcast:
+    description: "Envoyer un message à tous les joueurs connectés"
+    permission: "armesia.broadcast"
+    permission-message: "§cVous n'avez pas la permission."
+    aliases:
+      - "bc"
+  group:
+    description: "Changer de groupe"
+    permission: "armesia.group"
+    permission-message: "§cVous n'avez pas la permission."
+  job:
+    description: "Changer de job"
+    permission: "armesia.job"
+    permission-message: "§cVous n'avez pas la permission."
+  start:
+    description: "Lancer le timer"
+    permission: "armesia.starttimer"
+    permission-message: "§cVous n'avez pas la permission."
+  reloadconfig:
+    description: "Recharger la configuration"
+    permission: "armesia.reloadconfig"
+    permission-message: "§cVous n'avez pas la permission."
+  menu:
+    description: "Ouvrir le menu principal"
+    permission: "armesia.menu"
+    permission-message: "§cVous n'avez pas la permission."
+  money:
+    description: "Voir ou gérer l'argent"
+    permission: "armesia.money"
+    permission-message: "§cVous n'avez pas la permission."
+  tokens:
+    description: "Voir ou gérer les tokens"
+    permission: "armesia.tokens"
+    permission-message: "§cVous n'avez pas la permission."
+  pay:
+    description: "Donner de l'argent à un joueur"
+    permission: "armesia.pay"
+    permission-message: "§cVous n'avez pas la permission."
+permissions:
+  armesia.heal:
+    default: op
+  armesia.suicide:
+    default: true
+  armesia.kill:
+    default: op
