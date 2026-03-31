@@ -94,6 +94,22 @@ public class ZoneManager {
         return dot > 0.85;
     }
 
+    public ZoneData getZoneAt(Location loc) {
+
+        ZoneData best = null;
+
+        for (ZoneData zone : zones.values()) {
+
+            if (!isInZone(loc, zone)) continue;
+
+            if (best == null || zone.getPriority() > best.getPriority()) {
+                best = zone;
+            }
+        }
+
+        return best;
+    }
+
     // 🔁 TICK GLOBAL
     private void startTasks() {
 
@@ -108,6 +124,15 @@ public class ZoneManager {
                 Entity entity = Bukkit.getEntity(instance.getUuid());
 
                 if (!(entity instanceof Mob mob)) {
+                    iterator.remove();
+                    continue;
+                }
+
+                ZoneData correctZone = getZoneAt(mob.getLocation());
+
+                if (correctZone == null || !instance.getZoneId().equals(correctZone.getId())) {
+
+                    mob.remove();
                     iterator.remove();
                     continue;
                 }
@@ -143,38 +168,37 @@ public class ZoneManager {
 
             }
 
-        }, 0L, 300L); // 🔥 300 ticks = 15 secondes
+        }, 0L, 100L); // 🔥 100 ticks = 5 secondes
 
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
 
-            for (ZoneData zone : zones.values()) {
+            for (Player player : Bukkit.getOnlinePlayers()) {
 
-                for (var player : Bukkit.getOnlinePlayers()) {
+                ZoneData zone = getZoneAt(player.getLocation());
+                if (zone == null) continue;
 
-                    if (!isInZone(player.getLocation(), zone)) continue;
+                int nearby = countMobsAroundPlayer(player, zone, 70);
 
-                    int nearby = countMobsAroundPlayer(player, zone, 40);
+                int target = 4 + random.nextInt(3);
 
-                    int target = 3 + random.nextInt(3); // 🔥 3 à 5 mobs autour
+                if (nearby >= target) continue;
 
-                    if (nearby >= target) continue;
+                double spawnChance = (target - nearby) / (double) target;
+                spawnChance = Math.max(0.1, spawnChance);
 
-                    // 🔥 timing aléatoire
-                    if (random.nextDouble() > 0.6) continue;
+                if (random.nextDouble() > spawnChance) continue;
 
-                    Location loc = getSmartSpawnLocation(player, zone);
-                    if (loc == null) continue;
+                Location loc = getSmartSpawnLocation(player, zone);
+                if (loc == null) continue;
 
-                    String mobId = zone.getMobs().get(random.nextInt(zone.getMobs().size()));
-                    MobData data = mobManager.getMob(mobId);
-                    if (data == null) continue;
+                String mobId = zone.getMobs().get(random.nextInt(zone.getMobs().size()));
+                MobData data = mobManager.getMob(mobId);
+                if (data == null) continue;
 
-                    spawner.spawnMob(loc, data, zone.getId());
-                }
-
+                spawner.spawnMob(loc, data, zone.getId());
             }
 
-        }, 0L, 300L); // check toutes les 15 secondes
+        }, 0L, 100L);
     }
 
     // 🎯 SPAWN RANDOM

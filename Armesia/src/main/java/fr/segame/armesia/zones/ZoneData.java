@@ -9,6 +9,9 @@ public class ZoneData {
     private final Location pos1;
     private final Location pos2;
     private final List<String> mobs;
+    private int priority;
+    private boolean inheritMobs; // hérite des autres zones
+    private boolean overrideMobs; // bloque les autres
     private final int max;
 
     public ZoneData(String id, Location pos1, Location pos2, List<String> mobs, int max) {
@@ -23,5 +26,14 @@ public class ZoneData {
     public Location getPos1() { return pos1; }
     public Location getPos2() { return pos2; }
     public List<String> getMobs() { return mobs; }
+    public int getPriority() { return priority; }
+    public boolean isInheritMobs() {
+        return inheritMobs;
+    }
+
+    public boolean isOverrideMobs() {
+        return overrideMobs;
+    }
     public int getMax() { return max; }
+
 }
