@@ -64,6 +64,10 @@ commands:
     description: "Donner de l'argent à un joueur"
     permission: "armesia.pay"
     permission-message: "§cVous n'avez pas la permission."
+  level:
+    description: "Système de niveaux"
+    permission: "armesia.level"
+    permission-message: "§cVous n'avez pas la permission."
 permissions:
   armesia.heal:
     default: op

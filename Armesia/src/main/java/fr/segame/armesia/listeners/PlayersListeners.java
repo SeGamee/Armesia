@@ -1,6 +1,7 @@
 package fr.segame.armesia.listeners;
 
 import fr.segame.armesia.Main;
+import fr.segame.armesia.player.GamePlayer;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
@@ -17,7 +18,7 @@ public class PlayersListeners implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         Player joueur = event.getPlayer();
         Main.loadPlayer(joueur);
-        Main.updateTab(joueur);
+        Main.updateAllTabs();
         Component component = Component.text("[+] " + joueur.getName());
         event.joinMessage(component);
     }
@@ -68,6 +69,23 @@ public class PlayersListeners implements Listener {
             chatPrefix = Main.getGroupChatPrefix(group);
         }
 
-        event.setFormat(chatPrefix + "§7" + joueur.getName() + ": §f" + message);
+        // Récupération du niveau du joueur
+        GamePlayer gp = Main.getInstance().getPlayerManager().getPlayer(joueur.getUniqueId());
+        int level = gp != null ? gp.getLevel() : 1;
+        String levelPrefix = "§7[" + level + "✫] ";
+
+        event.setFormat(levelPrefix + chatPrefix + "§7" + joueur.getName() + ": §f" + message);
+    }
+
+    @org.bukkit.event.EventHandler
+    public void onRespawn(org.bukkit.event.player.PlayerRespawnEvent event) {
+        // Mise à jour du tab après respawn
+        org.bukkit.Bukkit.getScheduler().runTaskLater(fr.segame.armesia.Main.getInstance(), fr.segame.armesia.Main::updateAllTabs, 2L);
+    }
+
+    @org.bukkit.event.EventHandler
+    public void onWorldChange(org.bukkit.event.player.PlayerChangedWorldEvent event) {
+        // Mise à jour du tab après changement de monde
+        fr.segame.armesia.Main.updateAllTabs();
     }
 }

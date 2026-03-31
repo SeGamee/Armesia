@@ -149,7 +149,15 @@ public class GroupManager {
             return "";
         }
 
-        return prefix.replace("&", "§").trim() + " ";
+        String formatted = prefix.replace("&", "§").strip();
+
+        // Espace de séparation uniquement s'il y a du texte visible (pas que des codes couleur)
+        String visibleText = formatted.replaceAll("§[0-9a-fk-orA-FK-OR]", "");
+        if (!visibleText.isBlank()) {
+            return formatted + " ";
+        }
+
+        return formatted; // Prefix couleur seule : pas d'espace ajouté
     }
 
     public boolean setChatPrefix(String group, String prefix) {

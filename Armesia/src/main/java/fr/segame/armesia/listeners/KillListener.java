@@ -56,14 +56,14 @@ public class KillListener implements Listener {
         UUID killerUUID = killer.getUniqueId();
 
         // ===== ANTI FARM =====
-        if (lastKills.containsKey(victimUUID)) {
+        /*if (lastKills.containsKey(victimUUID)) {
             long last = lastKills.get(victimUUID);
 
             if (System.currentTimeMillis() - last < 60000) {
                 killer.sendMessage("§cKill non compté (anti-farm)");
                 return;
             }
-        }
+        }*/
 
         lastKills.put(victimUUID, System.currentTimeMillis());
 
@@ -71,8 +71,6 @@ public class KillListener implements Listener {
         statsManager.addKill(killerUUID);
 
         plugin.getLevelManager().addXP(killer.getUniqueId(), 100);
-
-        killer.sendMessage("§aKill enregistré ! +100 XP");
 
         // ===== STREAK =====
         statsManager.addKillstreak(killerUUID);
@@ -109,6 +107,6 @@ public class KillListener implements Listener {
         }
 
         // ===== MESSAGE =====
-        killer.sendMessage("§6[Kill] §f+" + reward + "$ §7(Streak: " + streak + ")");
+        killer.sendMessage("§6[Kill] §f+§a" + reward + "$ §fet + §b100xp §7(Streak: " + streak + ")");
     }
 }

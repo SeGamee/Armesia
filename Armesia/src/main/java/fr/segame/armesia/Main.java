@@ -7,16 +7,21 @@ import fr.segame.armesia.listeners.BlockListener;
 import fr.segame.armesia.listeners.KillListener;
 import fr.segame.armesia.listeners.PlayersListeners;
 import fr.segame.armesia.managers.*;
+import fr.segame.armesia.player.GamePlayer;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.ChatColor;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Consumer;
 
 public final class Main extends JavaPlugin {
 
@@ -95,6 +100,7 @@ public final class Main extends JavaPlugin {
         getCommand("money").setExecutor(new EconomyCommand(this));
         getCommand("tokens").setExecutor(new EconomyCommand(this));
         getCommand("pay").setExecutor(new EconomyCommand(this));
+        getCommand("level").setExecutor(new LevelCommand(this));
     }
 
     @Override
@@ -185,6 +191,18 @@ public final class Main extends JavaPlugin {
         boolean showTabPrefix = getInstance().getConfig()
                 .getBoolean("players." + uuid + ".show-tab-prefix", true);
 
+        // 🔥 XP + LEVEL
+        int xp = getInstance().getPlayersConfig()
+                .getInt("players." + uuid + ".xp", 0);
+
+        int level = getInstance().getPlayersConfig()
+                .getInt("players." + uuid + ".level", 1);
+
+        GamePlayer gp = getInstance().getPlayerManager().getPlayer(uuid);
+
+        gp.setXp(xp);
+        gp.setLevel(level);
+
         chatPrefixEnabled.put(uuid, showChatPrefix);
         tabPrefixEnabled.put(uuid, showTabPrefix);
 
@@ -221,16 +239,84 @@ public final class Main extends JavaPlugin {
 
         boolean showTabPrefix = tabPrefixEnabled.getOrDefault(player.getUniqueId(), true);
 
-        String prefix = "";
+        String prefix = "§7";
         if (showTabPrefix) {
             prefix = getGroupTabPrefix(group);
         }
 
-        int priority = groupManager.getPriority(group);
+        // Récupérer le vrai niveau du joueur via GamePlayer
+        GamePlayer gp = getInstance().getPlayerManager().getPlayer(player.getUniqueId());
+        int level = gp != null ? gp.getLevel() : 1;
 
-        player.setPlayerListName(prefix + "§7" + player.getName());
+        // Affichage dans le TAB
+        player.setPlayerListName("§7[" + level + "✫] " + prefix + player.getName());
 
-        // hack simple pour priorité
-        player.setLevel(priority);
+        // ---------- TRI PAR NIVEAU VIA TEAMS DE SCOREBOARD ----------
+        // On met à jour l'entrée de CE joueur dans le scoreboard de CHAQUE joueur en ligne.
+        // Chaque joueur a son propre scoreboard (créé par Armesia-Scoreboard),
+        // donc on doit propager le changement sur tous.
+        String teamName = String.format("lvl_%04d", 9999 - level);
+        String nametagPrefix = "§7[" + level + "✫] " + prefix;
+        ChatColor nameColor = getLastChatColor(nametagPrefix);
+
+        for (Player online : Bukkit.getOnlinePlayers()) {
+            Scoreboard board = online.getScoreboard();
+
+            // Retirer ce joueur de toute autre team lvl_ sur ce scoreboard
+            for (Team t : board.getTeams()) {
+                if (t.getName().startsWith("lvl_") && t.hasEntry(player.getName())) {
+                    t.removeEntry(player.getName());
+                }
+            }
+
+            // Créer la team si elle n'existe pas encore, puis y ajouter le joueur
+            Team team = board.getTeam(teamName);
+            if (team == null) {
+                team = board.registerNewTeam(teamName);
+            }
+            // Appliquer le préfixe du nametag (au-dessus de la tête) identique au TAB
+            team.setPrefix(nametagPrefix);
+            // Forcer la couleur du nom du joueur pour qu'elle corresponde au TAB
+            team.setColor(nameColor);
+            team.addEntry(player.getName());
+        }
     }
+
+    public static void updateAllTabs() {
+        // Met à jour le TAB de tous les joueurs actuellement connectés
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            updateTab(player);
+        }
+    }
+
+    // ── Callback enregistré par Armesia-Scoreboard au démarrage ──────────────
+    // Main n'importe rien d'Armesia-Scoreboard : pas de dépendance circulaire.
+    private static Consumer<Player> scoreboardUpdateCallback = null;
+
+    public static void registerScoreboardUpdateCallback(Consumer<Player> callback) {
+        scoreboardUpdateCallback = callback;
+    }
+
+    // ── Déclenche la mise à jour immédiate de la sidebar d'un joueur ──────────
+    public static void updatePlayerScoreboard(UUID uuid) {
+        if (scoreboardUpdateCallback == null) return;
+        Player player = Bukkit.getPlayer(uuid);
+        if (player == null) return;
+        scoreboardUpdateCallback.accept(player);
+    }
+
+    // ── Extraire la dernière couleur active dans une chaîne §X ─────────────────
+    // Utilisé pour que team.setColor() corresponde à la couleur du nom en TAB.
+    private static ChatColor getLastChatColor(String text) {
+        for (int i = text.length() - 2; i >= 0; i--) {
+            if (text.charAt(i) == '§') {
+                ChatColor c = ChatColor.getByChar(text.charAt(i + 1));
+                if (c != null && c.isColor()) {
+                    return c;
+                }
+            }
+        }
+        return ChatColor.WHITE;
+    }
+
 }
