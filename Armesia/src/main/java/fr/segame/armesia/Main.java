@@ -6,9 +6,19 @@ import fr.segame.armesia.commands.*;
 import fr.segame.armesia.listeners.BlockListener;
 import fr.segame.armesia.listeners.KillListener;
 import fr.segame.armesia.listeners.PlayersListeners;
+import fr.segame.armesia.loot.LootData;
+import fr.segame.armesia.loot.LootManager;
 import fr.segame.armesia.managers.*;
+import fr.segame.armesia.mobs.MobData;
+import fr.segame.armesia.mobs.MobListener;
+import fr.segame.armesia.mobs.MobManager;
+import fr.segame.armesia.mobs.MobSpawner;
 import fr.segame.armesia.player.GamePlayer;
+import fr.segame.armesia.zones.ZoneData;
+import fr.segame.armesia.zones.ZoneManager;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -79,12 +89,18 @@ public final class Main extends JavaPlugin {
         playerManager = new PlayerManager();
         levelManager = new LevelManager(playerManager);
 
+        MobManager mobManager = new MobManager();
+        MobSpawner mobSpawner = new MobSpawner(mobManager);
+        LootManager lootManager = new LootManager();
+        ZoneManager zoneManager = new ZoneManager(this, mobSpawner, mobManager);
+
         getLogger().info("Armesia démarre !");
 
         PluginManager pluginManager = Bukkit.getPluginManager();
         pluginManager.registerEvents(new KillListener(this, statsManager, economyManager), this);
         pluginManager.registerEvents(new PlayersListeners(), this);
         pluginManager.registerEvents(new BlockListener(), this);
+        pluginManager.registerEvents(new MobListener(mobManager, lootManager, zoneManager), this);
 
         // commandes
         getCommand("heal").setExecutor(new HealCommand());
@@ -101,6 +117,26 @@ public final class Main extends JavaPlugin {
         getCommand("tokens").setExecutor(new EconomyCommand(this));
         getCommand("pay").setExecutor(new EconomyCommand(this));
         getCommand("level").setExecutor(new LevelCommand(this));
+
+        // MOB
+        mobManager.registerMob(
+                new MobData("bandit", "§cBandit", 5, 40, 10, 20, "bandit_loot")
+        );
+
+        // LOOT
+        lootManager.register("bandit_loot", List.of(
+                new LootData(Material.GOLD_NUGGET, 1, 3, 1.0)
+        ));
+
+        // ZONE
+        zoneManager.registerZone(new ZoneData(
+                "zone1",
+                new Location(Bukkit.getWorlds().get(0), 0, 90, 0),
+                new Location(Bukkit.getWorlds().get(0), 200, 90, 200),
+                List.of("bandit"),
+                5
+        ));
+
     }
 
     @Override
