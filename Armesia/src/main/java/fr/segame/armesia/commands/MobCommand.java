@@ -20,12 +20,15 @@ import java.util.stream.Collectors;
  *
  *  /mob list
  *  /mob info <id>
- *  /mob create <id> <entityType> <level> <health> <money> <nom...>
+ *  /mob create <id> <entityType> <level> <health> <moneyMin> <moneyMax> <xpMin> <xpMax> <nom...>
  *  /mob delete <id>
  *  /mob set <id> name <nom...>    ← supporte &c &l etc.
  *  /mob set <id> level <int>
  *  /mob set <id> health <double>
- *  /mob set <id> money <int>
+ *  /mob set <id> moneymin <int>
+ *  /mob set <id> moneymax <int>
+ *  /mob set <id> xpmin <int>
+ *  /mob set <id> xpmax <int>
  *  /mob set <id> type <EntityType>
  *  /mob set <id> loot <tableId>
  *  /mob spawn <id>               ← force un spawn à votre position
@@ -52,7 +55,7 @@ public class MobCommand implements CommandExecutor, TabCompleter {
         switch (args[0].toLowerCase()) {
             case "list"   -> cmdList(sender);
             case "info"   -> { if (need(sender, args, 2)) cmdInfo(sender, args[1]); }
-            case "create" -> { if (need(sender, args, 7)) cmdCreate(sender, args); }
+            case "create" -> { if (need(sender, args, 10)) cmdCreate(sender, args); }
             case "delete" -> { if (need(sender, args, 2)) cmdDelete(sender, args[1]); }
             case "set"    -> { if (need(sender, args, 4)) cmdSet(sender, args); }
             case "spawn"  -> { if (need(sender, args, 2)) cmdSpawn(sender, args[1]); }
@@ -83,13 +86,14 @@ public class MobCommand implements CommandExecutor, TabCompleter {
         s.sendMessage("  §7Type      : §b" + mob.getEntityType().name());
         s.sendMessage("  §7Niveau    : §f" + mob.getLevel());
         s.sendMessage("  §7Santé     : §c" + mob.getHealth());
-        s.sendMessage("  §7Argent    : §6" + mob.getMoney());
+        s.sendMessage("  §7Argent    : §6" + mob.getMoneyMin() + " §7→ §6" + mob.getMoneyMax() + "$");
+        s.sendMessage("  §7XP        : §b" + mob.getXpMin() + " §7→ §b" + mob.getXpMax() + " XP");
         s.sendMessage("  §7LootTable : §d" + (mob.getLootTable().isEmpty() ? "§7(aucune)" : mob.getLootTable()));
     }
 
     private void cmdCreate(CommandSender s, String[] args) {
-        // /mob create <id> <type> <level> <health> <money> <nom...>
-        //              1     2      3       4        5       6+
+        // /mob create <id> <type> <level> <health> <moneyMin> <moneyMax> <xpMin> <xpMax> <nom...>
+        //              1     2      3       4          5          6         7       8       9+
         String id = args[1].toLowerCase();
         if (mobManager.getMob(id) != null) {
             s.sendMessage(PREFIX + ERR + "Le mob '" + id + "' existe déjà."); return;
@@ -98,16 +102,19 @@ public class MobCommand implements CommandExecutor, TabCompleter {
         try { type = EntityType.valueOf(args[2].toUpperCase()); }
         catch (IllegalArgumentException e) { s.sendMessage(PREFIX + ERR + "Type invalide : " + args[2]); return; }
 
-        int level, money;
+        int level, moneyMin, moneyMax, xpMin, xpMax;
         double health;
         try {
-            level  = Integer.parseInt(args[3]);
-            health = Double.parseDouble(args[4]);
-            money  = Integer.parseInt(args[5]);
+            level    = Integer.parseInt(args[3]);
+            health   = Double.parseDouble(args[4]);
+            moneyMin = Integer.parseInt(args[5]);
+            moneyMax = Integer.parseInt(args[6]);
+            xpMin    = Integer.parseInt(args[7]);
+            xpMax    = Integer.parseInt(args[8]);
         } catch (NumberFormatException e) { s.sendMessage(PREFIX + ERR + "Valeurs numériques invalides."); return; }
 
-        String name = color(buildName(args, 6));
-        MobData mob = new MobData(id, name, type, level, health, money, "");
+        String name = color(buildName(args, 9));
+        MobData mob = new MobData(id, name, type, level, health, moneyMin, moneyMax, xpMin, xpMax, "");
         mobManager.registerMob(mob);
         mobConfig.saveMob(mob);
         s.sendMessage(PREFIX + OK + "Mob '" + id + "' créé : " + name);
@@ -127,16 +134,19 @@ public class MobCommand implements CommandExecutor, TabCompleter {
         if (mob == null) { s.sendMessage(PREFIX + ERR + "Mob '" + id + "' introuvable."); return; }
 
         switch (prop) {
-            case "name"   -> mob.setName(color(buildName(args, 3)));
-            case "level"  -> { try { mob.setLevel(Integer.parseInt(args[3])); } catch (NumberFormatException e) { invalid(s); return; } }
-            case "health" -> { try { mob.setHealth(Double.parseDouble(args[3])); } catch (NumberFormatException e) { invalid(s); return; } }
-            case "money"  -> { try { mob.setMoney(Integer.parseInt(args[3])); } catch (NumberFormatException e) { invalid(s); return; } }
-            case "type"   -> {
+            case "name"     -> mob.setName(color(buildName(args, 3)));
+            case "level"    -> { try { mob.setLevel(Integer.parseInt(args[3])); } catch (NumberFormatException e) { invalid(s); return; } }
+            case "health"   -> { try { mob.setHealth(Double.parseDouble(args[3])); } catch (NumberFormatException e) { invalid(s); return; } }
+            case "moneymin" -> { try { mob.setMoneyMin(Integer.parseInt(args[3])); } catch (NumberFormatException e) { invalid(s); return; } }
+            case "moneymax" -> { try { mob.setMoneyMax(Integer.parseInt(args[3])); } catch (NumberFormatException e) { invalid(s); return; } }
+            case "xpmin"    -> { try { mob.setXpMin(Integer.parseInt(args[3])); } catch (NumberFormatException e) { invalid(s); return; } }
+            case "xpmax"    -> { try { mob.setXpMax(Integer.parseInt(args[3])); } catch (NumberFormatException e) { invalid(s); return; } }
+            case "type"     -> {
                 try { mob.setEntityType(EntityType.valueOf(args[3].toUpperCase())); }
                 catch (IllegalArgumentException e) { s.sendMessage(PREFIX + ERR + "Type invalide : " + args[3]); return; }
             }
-            case "loot"   -> mob.setLootTable(args[3]);
-            default       -> { s.sendMessage(PREFIX + ERR + "Propriété inconnue : " + prop); return; }
+            case "loot"     -> mob.setLootTable(args[3]);
+            default         -> { s.sendMessage(PREFIX + ERR + "Propriété inconnue : " + prop); return; }
         }
         mobConfig.saveMob(mob);
         s.sendMessage(PREFIX + OK + "Mob '" + id + "' mis à jour (§f" + prop + "§a).");
@@ -162,12 +172,15 @@ public class MobCommand implements CommandExecutor, TabCompleter {
                 case 3  -> entityTypes(args[2]);
                 case 4  -> List.of("<level>");
                 case 5  -> List.of("<health>");
-                case 6  -> List.of("<money>");
-                default -> args.length >= 7 ? List.of("<nom...>") : List.of();
+                case 6  -> List.of("<moneyMin>");
+                case 7  -> List.of("<moneyMax>");
+                case 8  -> List.of("<xpMin>");
+                case 9  -> List.of("<xpMax>");
+                default -> args.length >= 10 ? List.of("<nom...>") : List.of();
             };
             case "set" -> {
                 if (args.length == 2) yield filter(args[1], mobManager.getMobIds());
-                if (args.length == 3) yield filter(args[2], "name", "level", "health", "money", "type", "loot");
+                if (args.length == 3) yield filter(args[2], "name", "level", "health", "moneymin", "moneymax", "xpmin", "xpmax", "type", "loot");
                 if (args.length == 4 && args[2].equalsIgnoreCase("type")) yield entityTypes(args[3]);
                 yield List.of();
             }
@@ -194,9 +207,9 @@ public class MobCommand implements CommandExecutor, TabCompleter {
         s.sendMessage(PREFIX + "§eCommandes /mob :");
         s.sendMessage("  §f/mob list");
         s.sendMessage("  §f/mob info <id>");
-        s.sendMessage("  §f/mob create <id> <type> <lvl> <hp> <money> <nom...>  §7(&c pour couleurs)");
+        s.sendMessage("  §f/mob create <id> <type> <lvl> <hp> <moneyMin> <moneyMax> <xpMin> <xpMax> <nom...>  §7(&c pour couleurs)");
         s.sendMessage("  §f/mob delete <id>");
-        s.sendMessage("  §f/mob set <id> <name|level|health|money|type|loot> <valeur>");
+        s.sendMessage("  §f/mob set <id> <name|level|health|moneymin|moneymax|xpmin|xpmax|type|loot> <valeur>");
         s.sendMessage("  §f/mob spawn <id>");
     }
 

@@ -1,16 +1,19 @@
 package fr.segame.armesia.mobs;
 
-import fr.segame.armesia.Main;
+import fr.segame.armesia.api.EconomyAPI;
 import fr.segame.armesia.loot.LootManager;
 import fr.segame.armesia.managers.DebugManager;
+import fr.segame.armesia.managers.LevelManager;
 import fr.segame.armesia.zones.ZoneData;
 import fr.segame.armesia.zones.ZoneManager;
-import org.bukkit.entity.LivingEntity;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.world.ChunkLoadEvent;
+
+import java.util.Random;
 
 public class MobListener implements Listener {
 
@@ -18,13 +21,19 @@ public class MobListener implements Listener {
     private final LootManager lootManager;
     private final ZoneManager zoneManager;
     private final DebugManager debug;
+    private final EconomyAPI economyAPI;
+    private final LevelManager levelManager;
+    private final Random random = new Random();
 
     public MobListener(MobManager mobManager, LootManager lootManager,
-                       ZoneManager zoneManager, DebugManager debug) {
+                       ZoneManager zoneManager, DebugManager debug,
+                       EconomyAPI economyAPI, LevelManager levelManager) {
         this.mobManager  = mobManager;
         this.lootManager = lootManager;
         this.zoneManager = zoneManager;
         this.debug       = debug;
+        this.economyAPI  = economyAPI;
+        this.levelManager = levelManager;
     }
 
     // ❌ BLOQUE MOBS VANILLA
@@ -69,9 +78,27 @@ public class MobListener implements Listener {
         if (data == null) return;
 
         lootManager.dropLoot(event.getEntity().getLocation(), data.getLootTable());
-        Main.getInstance().getEconomyAPI().addMoney(player.getUniqueId(), data.getMoney());
+
+        // Tirage aléatoire argent
+        int money = randBetween(data.getMoneyMin(), data.getMoneyMax());
+        // Tirage aléatoire XP
+        int xp = randBetween(data.getXpMin(), data.getXpMax());
+
+        if (money > 0) economyAPI.addMoney(player.getUniqueId(), money);
+        if (xp > 0)    levelManager.addXP(player.getUniqueId(), xp);
+
+        // Message de kill
+        String mobName = ChatColor.translateAlternateColorCodes('&', data.getName());
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&',
+                "&aVous avez tué " + mobName + " &a→ &6+" + money + "$ &7| &b+" + xp + "XP"));
 
         mobManager.removeInstance(event.getEntity().getUniqueId());
+    }
+
+    /** Retourne un entier aléatoire entre min et max inclus. Si min >= max, retourne min. */
+    private int randBetween(int min, int max) {
+        if (min >= max) return min;
+        return min + random.nextInt(max - min + 1);
     }
 
     // 🚫 PAS DE DÉGÂTS MOB VS MOB

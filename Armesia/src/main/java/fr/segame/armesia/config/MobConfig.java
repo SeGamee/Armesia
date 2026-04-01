@@ -38,12 +38,18 @@ public class MobConfig {
         for (String id : config.getConfigurationSection("mobs").getKeys(false)) {
             String path = "mobs." + id;
 
-            String name        = config.getString(path + ".name", id);
-            int level          = config.getInt(path + ".level", 1);
-            double health      = config.getDouble(path + ".health", 20.0);
-            int money          = config.getInt(path + ".money", 0);
-            String lootTable   = config.getString(path + ".loot-table", "");
-            String typeStr     = config.getString(path + ".entity-type", "ZOMBIE");
+            String name      = config.getString(path + ".name", id);
+            int level        = config.getInt(path + ".level", 1);
+            double health    = config.getDouble(path + ".health", 20.0);
+            String lootTable = config.getString(path + ".loot-table", "");
+            String typeStr   = config.getString(path + ".entity-type", "ZOMBIE");
+
+            // Compat rétrograde : ancienne clé "money" fixe
+            int legacyMoney = config.getInt(path + ".money", -1);
+            int moneyMin = config.getInt(path + ".money-min", legacyMoney >= 0 ? legacyMoney : 0);
+            int moneyMax = config.getInt(path + ".money-max", legacyMoney >= 0 ? legacyMoney : 0);
+            int xpMin    = config.getInt(path + ".xp-min", 0);
+            int xpMax    = config.getInt(path + ".xp-max", 0);
 
             EntityType entityType;
             try {
@@ -53,10 +59,10 @@ public class MobConfig {
                 entityType = EntityType.ZOMBIE;
             }
 
-            mobManager.registerMob(new MobData(id, name, entityType, level, health, money, lootTable));
+            mobManager.registerMob(new MobData(id, name, entityType, level, health, moneyMin, moneyMax, xpMin, xpMax, lootTable));
         }
 
-        plugin.getLogger().info("[MobConfig] " + config.getConfigurationSection("mobs").getKeys(false).size() + " mob(s) chargé(s).");
+
     }
 
     // ─── Sauvegarde ───────────────────────────────────────────────────────────
@@ -90,7 +96,11 @@ public class MobConfig {
         config.set(path + ".entity-type", mob.getEntityType().name());
         config.set(path + ".level",       mob.getLevel());
         config.set(path + ".health",      mob.getHealth());
-        config.set(path + ".money",       mob.getMoney());
+        config.set(path + ".money",       null);          // supprime l'ancienne clé fixe
+        config.set(path + ".money-min",   mob.getMoneyMin());
+        config.set(path + ".money-max",   mob.getMoneyMax());
+        config.set(path + ".xp-min",      mob.getXpMin());
+        config.set(path + ".xp-max",      mob.getXpMax());
         config.set(path + ".loot-table",  mob.getLootTable());
     }
 

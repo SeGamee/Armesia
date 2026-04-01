@@ -449,7 +449,7 @@ public class ZoneManager {
                     continue;
                 }
 
-                String mobId = effectiveMobs.get(random.nextInt(effectiveMobs.size()));
+                String mobId = pickWeightedMob(effectiveMobs, zone);
                 MobData data = mobManager.getMob(mobId);
                 if (data == null) {
                     debug.logVerbose("§e[SKIP]§7 zone=§f" + zone.getId()
@@ -513,20 +513,15 @@ public class ZoneManager {
 
     /** Scanne tous les mondes chargés et récupère les mobs custom orphelins. */
     public void scanAndRecoverAllLoaded() {
-        int recovered = 0, killed = 0;
         for (World world : Bukkit.getWorlds()) {
             for (Entity entity : world.getEntities()) {
                 if (!(entity instanceof LivingEntity le)) continue;
                 String mobId = le.getPersistentDataContainer().get(keyMobId, PersistentDataType.STRING);
                 if (mobId == null) continue;
                 if (mobManager.getInstance(entity.getUniqueId()) != null) continue;
-                if (tryRecoverEntity(entity)) recovered++;
-                else killed++;
+                if (!tryRecoverEntity(entity)) entity.remove();
             }
         }
-        if (recovered > 0 || killed > 0)
-            plugin.getLogger().info("[ZoneManager] Démarrage : " + recovered
-                    + " mob(s) restauré(s), " + killed + " mob(s) orphelin(s) supprimé(s).");
     }
 
     // ─── Utilitaires ─────────────────────────────────────────────────────────
@@ -536,6 +531,22 @@ public class ZoneManager {
         double dx = a.getX() - b.getX();
         double dz = a.getZ() - b.getZ();
         return Math.sqrt(dx * dx + dz * dz);
+    }
+
+    /**
+     * Sélectionne un mob parmi la liste selon les poids définis dans la zone.
+     * Un mob sans poids explicite a un poids de 1.0.
+     */
+    private String pickWeightedMob(List<String> mobIds, ZoneData zone) {
+        if (mobIds.size() == 1) return mobIds.get(0);
+        double total = mobIds.stream().mapToDouble(zone::getMobWeight).sum();
+        double roll  = random.nextDouble() * total;
+        double cum   = 0;
+        for (String id : mobIds) {
+            cum += zone.getMobWeight(id);
+            if (roll < cum) return id;
+        }
+        return mobIds.get(mobIds.size() - 1); // fallback (arrondi flottant)
     }
 
     private void killZoneMobs(String zoneId) {

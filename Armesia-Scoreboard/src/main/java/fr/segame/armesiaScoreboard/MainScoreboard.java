@@ -44,7 +44,7 @@ public class MainScoreboard extends JavaPlugin implements Listener {
 
         Bukkit.getPluginManager().registerEvents(this, this);
 
-        getLogger().info("Scoreboard connecté à Armesia !");
+
     }
 
     @Override

@@ -74,7 +74,7 @@ public class LootConfig {
             lootManager.register(tableId, entries);
         }
 
-        plugin.getLogger().info("[LootConfig] " + root.getKeys(false).size() + " table(s) de loot chargée(s).");
+
     }
 
     // ─── Sauvegarde ───────────────────────────────────────────────────────────

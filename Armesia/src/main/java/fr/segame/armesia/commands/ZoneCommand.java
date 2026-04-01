@@ -68,6 +68,7 @@ public class ZoneCommand implements CommandExecutor, TabCompleter {
             case "debug"     -> { if (needPlayer(sender)) cmdDebug((Player) sender, args); }
             case "addmob"    -> { if (need(sender, args, 3)) cmdAddMob(sender, args[1], args[2]); }
             case "removemob" -> { if (need(sender, args, 3)) cmdRemoveMob(sender, args[1], args[2]); }
+            case "setweight" -> { if (need(sender, args, 4)) cmdSetWeight(sender, args[1], args[2], args[3]); }
             case "set"       -> { if (need(sender, args, 4)) cmdSet(sender, args); }
             case "preview"   -> { if (needPlayer(sender) && need(sender, args, 2)) cmdPreview((Player) sender, args[1]); }
             default          -> sendHelp(sender);
@@ -97,7 +98,7 @@ public class ZoneCommand implements CommandExecutor, TabCompleter {
         s.sendMessage(PREFIX + "§e=== " + z.getId() + " ===");
         s.sendMessage("  §7Priorité        : §f" + z.getPriority());
         s.sendMessage("  §7Cap global      : §f" + z.getMax() + " mobs");
-        s.sendMessage("  §7Mobs            : §f" + z.getMobs());
+        s.sendMessage("  §7Mobs            : " + fmtMobsWithWeights(z));
         s.sendMessage("  §7Hérite/Override : §f" + z.isInheritMobs() + " / §f" + z.isOverrideMobs());
         s.sendMessage("  §7─── Spawn ───────────────────────────────");
         s.sendMessage("  §7Radius          : §f" + z.getSpawnRadiusMin() + " §7- §f" + z.getSpawnRadiusMax() + " blocs");
@@ -175,10 +176,11 @@ public class ZoneCommand implements CommandExecutor, TabCompleter {
         }
         p.sendMessage(PREFIX + "§e✔ Zone active : §f" + z.getId());
         List<String> effectiveMobs = zoneManager.getEffectiveMobs(z, p.getLocation());
-        p.sendMessage(PREFIX + "§7Mobs effectifs : §f" + effectiveMobs);
         if (effectiveMobs.isEmpty()) {
             p.sendMessage(PREFIX + ERR + "⚠ Aucun mob ! /zone addmob " + z.getId() + " <mobId>"); return;
         }
+        // Affichage avec poids
+        p.sendMessage(PREFIX + "§7Mobs effectifs  : " + fmtMobsWithWeights(z));
         List<String> missing = effectiveMobs.stream()
                 .filter(id -> mobManager.getMob(id) == null).collect(Collectors.toList());
         if (!missing.isEmpty())
@@ -249,8 +251,52 @@ public class ZoneCommand implements CommandExecutor, TabCompleter {
         ZoneData z = zoneManager.getZone(id);
         if (z == null) { s.sendMessage(PREFIX + ERR + "Zone '" + id + "' introuvable."); return; }
         if (!z.getMobs().remove(mobId)) { s.sendMessage(PREFIX + ERR + "Mob '" + mobId + "' absent de cette zone."); return; }
+        z.setMobWeight(mobId, 0); // nettoyer le poids s'il était défini
         zoneConfig.saveZone(z);
         s.sendMessage(PREFIX + OK + "Mob '" + mobId + "' retiré de '" + id + "'.");
+    }
+
+    /** /zone setweight <zoneId> <mobId> <poids> */
+    private void cmdSetWeight(CommandSender s, String id, String mobId, String weightStr) {
+        ZoneData z = zoneManager.getZone(id);
+        if (z == null)              { s.sendMessage(PREFIX + ERR + "Zone '" + id + "' introuvable."); return; }
+        if (!z.getMobs().contains(mobId)) { s.sendMessage(PREFIX + ERR + "Mob '" + mobId + "' absent de la zone (utilisez /zone addmob)."); return; }
+        double weight;
+        try { weight = Double.parseDouble(weightStr); } catch (NumberFormatException e) {
+            s.sendMessage(PREFIX + ERR + "Poids invalide : §f" + weightStr + " §c(nombre > 0)"); return; }
+        if (weight <= 0) { s.sendMessage(PREFIX + ERR + "Le poids doit être > 0."); return; }
+        z.setMobWeight(mobId, weight);
+        zoneConfig.saveZone(z);
+        s.sendMessage(PREFIX + OK + "Poids de §f'" + mobId + "' §adans §f'" + id + "' §a: §f" + weight
+                + "  §7(" + fmtProb(z, mobId) + " de chance)");
+    }
+
+    /**
+     * Formate la liste des mobs avec leur poids et probabilité calculée.
+     * Ex : zombie §8(×3.0 §775%) §7| skeleton §8(×1.0 §725%)
+     */
+    private String fmtMobsWithWeights(ZoneData z) {
+        List<String> mobs = z.getMobs();
+        if (mobs.isEmpty()) return "§cAucun";
+        double total = mobs.stream().mapToDouble(z::getMobWeight).sum();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < mobs.size(); i++) {
+            String m = mobs.get(i);
+            double w = z.getMobWeight(m);
+            double prob = total > 0 ? w / total * 100 : 0;
+            if (i > 0) sb.append("§7, ");
+            sb.append("§f").append(m)
+              .append(" §8(§7×").append(w == (long) w ? String.valueOf((long) w) : String.format("%.1f", w))
+              .append(" §e").append(String.format("%.0f%%", prob)).append("§8)");
+        }
+        return sb.toString();
+    }
+
+    /** Retourne la probabilité formatée d'un mob dans sa zone (ex : "75%"). */
+    private String fmtProb(ZoneData z, String mobId) {
+        double total = z.getMobs().stream().mapToDouble(z::getMobWeight).sum();
+        if (total <= 0) return "0%";
+        return String.format("%.1f%%", z.getMobWeight(mobId) / total * 100);
     }
 
     /** /zone preview <id> — active/désactive la prévisualisation particules de la bordure */
@@ -325,11 +371,19 @@ public class ZoneCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
         if (args.length == 1)
             return filter(args[0], "list", "info", "create", "delete", "pos1", "pos2",
-                    "tp", "check", "debug", "addmob", "removemob", "set", "preview");
+                    "tp", "check", "debug", "addmob", "removemob", "setweight", "set", "preview");
         String sub = args[0].toLowerCase();
         return switch (sub) {
             case "info", "delete", "pos1", "pos2", "tp", "preview" ->
                     args.length == 2 ? filter(args[1], zoneManager.getZoneIds()) : List.of();
+            case "setweight" -> {
+                if (args.length == 2) yield filter(args[1], zoneManager.getZoneIds());
+                if (args.length == 3) {
+                    ZoneData z = zoneManager.getZone(args[1]);
+                    yield z != null ? filter(args[2], new HashSet<>(z.getMobs())) : List.of();
+                }
+                yield List.of();
+            }
             case "debug" ->
                     args.length == 2 ? filter(args[1], "off", "normal", "verbose") : List.of();
             case "addmob" -> {
@@ -378,6 +432,7 @@ public class ZoneCommand implements CommandExecutor, TabCompleter {
         s.sendMessage("  §f/zone pos1|pos2 <id>  §7· tp <id>  §7· check  §7· debug [off|normal|verbose]");
         s.sendMessage("  §f/zone preview <id>     §7· §8(active/désactive prévisualisation particules)");
         s.sendMessage("  §f/zone addmob <id> <mobId>  §7· removemob <id> <mobId>");
+        s.sendMessage("  §f/zone setweight <id> <mobId> <poids>  §8(ex: 3.0 = 3× plus probable qu'un poids 1.0)");
         s.sendMessage("  §f/zone set <id> <prop> <val>");
         s.sendMessage("  §7  Général   : max  priority  inherit  override");
         s.sendMessage("  §7  Spawn     : spawnmin  spawnmax  targetmin  targetmax");

@@ -14,6 +14,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 
 public class ZoneConfig {
@@ -91,6 +92,16 @@ public class ZoneConfig {
                     new Location(world, p2x, p2y, p2z),
                     mobs, max);
 
+            // ── Poids de spawn ──
+            org.bukkit.configuration.ConfigurationSection weightsSection =
+                    config.getConfigurationSection(path + ".mob-weights");
+            if (weightsSection != null) {
+                for (String mobId : weightsSection.getKeys(false)) {
+                    double w = weightsSection.getDouble(mobId, 1.0);
+                    if (w > 0) zone.setMobWeight(mobId, w);
+                }
+            }
+
             zone.setPriority(priority);
             zone.setInheritMobs(inherit);
             zone.setOverrideMobs(override);
@@ -116,7 +127,7 @@ public class ZoneConfig {
             zoneManager.registerZone(zone);
         }
 
-        plugin.getLogger().info("[ZoneConfig] " + root.getKeys(false).size() + " zone(s) chargée(s).");
+
     }
 
     // ─── Sauvegarde ───────────────────────────────────────────────────────────
@@ -167,6 +178,12 @@ public class ZoneConfig {
         // ── Frontière ──
         config.set(path + ".boundary-tolerance",      zone.getBoundaryTolerance());
         config.set(path + ".bounce-strength",         zone.getBounceStrength());
+        // ── Poids de spawn ──
+        config.set(path + ".mob-weights", null); // reset avant réécriture
+        Map<String, Double> weights = zone.getMobWeights();
+        if (!weights.isEmpty()) {
+            weights.forEach((mobId, w) -> config.set(path + ".mob-weights." + mobId, w));
+        }
     }
 
     private void persist() {

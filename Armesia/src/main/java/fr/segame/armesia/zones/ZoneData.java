@@ -2,7 +2,10 @@ package fr.segame.armesia.zones;
 
 import org.bukkit.Location;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ZoneData {
 
@@ -10,6 +13,8 @@ public class ZoneData {
     private Location pos1;
     private Location pos2;
     private final List<String> mobs;
+    /** Poids de spawn par mobId (défaut 1.0 = probabilité égale). */
+    private final Map<String, Double> mobWeights = new HashMap<>();
     private int priority;
     private boolean inheritMobs;
     private boolean overrideMobs;
@@ -155,4 +160,23 @@ public class ZoneData {
 
     public double getBounceStrength() { return bounceStrength; }
     public void setBounceStrength(double v) { this.bounceStrength = Math.max(0.0, v); }
+
+    // ── Poids de spawn ────────────────────────────────────────────────────────
+
+    /** Retourne le poids de spawn d'un mob (1.0 si non défini). */
+    public double getMobWeight(String mobId) {
+        return mobWeights.getOrDefault(mobId, 1.0);
+    }
+
+    /**
+     * Définit le poids de spawn d'un mob.
+     * @param weight positif ; si ≤ 0 le poids explicite est retiré (retour à 1.0 par défaut)
+     */
+    public void setMobWeight(String mobId, double weight) {
+        if (weight <= 0) mobWeights.remove(mobId);
+        else             mobWeights.put(mobId, weight);
+    }
+
+    /** Vue non-modifiable des poids explicitement définis (ne contient pas les défauts 1.0). */
+    public Map<String, Double> getMobWeights() { return Collections.unmodifiableMap(mobWeights); }
 }

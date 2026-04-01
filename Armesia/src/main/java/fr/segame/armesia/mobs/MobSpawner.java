@@ -34,7 +34,7 @@ public class MobSpawner {
             return;
         }
 
-        mob.setCustomName(data.getName() + " §7[Niv." + data.getLevel() + "]");
+        mob.setCustomName(data.getName());
         mob.setCustomNameVisible(true);
 
         var maxHealthAttr = mob.getAttribute(Attribute.GENERIC_MAX_HEALTH);

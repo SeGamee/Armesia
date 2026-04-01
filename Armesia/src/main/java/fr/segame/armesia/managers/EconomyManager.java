@@ -20,6 +20,7 @@ public class EconomyManager {
     public void setMoney(UUID uuid, double amount) {
         plugin.getPlayersConfig().set("players." + uuid + ".money", amount);
         plugin.savePlayers();
+        Main.updatePlayerScoreboard(uuid);
     }
 
     public void addMoney(UUID uuid, double amount) {
@@ -47,6 +48,7 @@ public class EconomyManager {
     public void setTokens(UUID uuid, int amount) {
         plugin.getPlayersConfig().set("players." + uuid + ".tokens", amount);
         plugin.savePlayers();
+        Main.updatePlayerScoreboard(uuid);
     }
 
     public void addTokens(UUID uuid, int amount) {

@@ -111,13 +111,13 @@ public final class Main extends JavaPlugin {
         // Les zones peuvent référencer des mobs → on charge après
         zoneConfig.load();
 
-        getLogger().info("Armesia démarre !");
+
 
         PluginManager pluginManager = Bukkit.getPluginManager();
         pluginManager.registerEvents(new KillListener(this, statsManager, economyManager), this);
         pluginManager.registerEvents(new PlayersListeners(), this);
         pluginManager.registerEvents(new BlockListener(), this);
-        pluginManager.registerEvents(new MobListener(mobManager, lootManager, zoneManager, debugManager), this);
+        pluginManager.registerEvents(new MobListener(mobManager, lootManager, zoneManager, debugManager, economyAPI, levelManager), this);
         pluginManager.registerEvents(new fr.segame.armesia.zones.ZoneListener(zoneManager, debugManager), this);
 
         // ─── Commandes existantes ─────────────────────────────────────────
