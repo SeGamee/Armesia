@@ -11,8 +11,20 @@ public class MobManager {
         mobs.put(mob.getId(), mob);
     }
 
+    public void removeMob(String id) {
+        mobs.remove(id);
+    }
+
     public MobData getMob(String id) {
         return mobs.get(id);
+    }
+
+    public Collection<MobData> getAllMobs() {
+        return mobs.values();
+    }
+
+    public Set<String> getMobIds() {
+        return mobs.keySet();
     }
 
     public void addInstance(MobInstance instance) {

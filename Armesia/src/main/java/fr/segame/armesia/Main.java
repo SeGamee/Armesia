@@ -3,22 +3,19 @@ package fr.segame.armesia;
 import fr.segame.armesia.api.EconomyAPI;
 import fr.segame.armesia.api.StatsAPI;
 import fr.segame.armesia.commands.*;
+import fr.segame.armesia.config.LootConfig;
+import fr.segame.armesia.config.MobConfig;
+import fr.segame.armesia.config.ZoneConfig;
 import fr.segame.armesia.listeners.BlockListener;
 import fr.segame.armesia.listeners.KillListener;
 import fr.segame.armesia.listeners.PlayersListeners;
-import fr.segame.armesia.loot.LootData;
 import fr.segame.armesia.loot.LootManager;
 import fr.segame.armesia.managers.*;
-import fr.segame.armesia.mobs.MobData;
-import fr.segame.armesia.mobs.MobListener;
+import fr.segame.armesia.player.GamePlayer;import fr.segame.armesia.mobs.MobListener;
 import fr.segame.armesia.mobs.MobManager;
 import fr.segame.armesia.mobs.MobSpawner;
-import fr.segame.armesia.player.GamePlayer;
-import fr.segame.armesia.zones.ZoneData;
 import fr.segame.armesia.zones.ZoneManager;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -41,9 +38,18 @@ public final class Main extends JavaPlugin {
     public static EconomyManager economyManager;
     private EconomyAPI economyAPI;
     private StatsAPI statsAPI;
-
     private PlayerManager playerManager;
     private LevelManager levelManager;
+
+    // Système de mobs/zones/loots
+    private MobManager  mobManager;
+    private MobSpawner  mobSpawner;
+    private LootManager lootManager;
+    private ZoneManager zoneManager;
+    private DebugManager debugManager;
+    private MobConfig   mobConfig;
+    private LootConfig  lootConfig;
+    private ZoneConfig  zoneConfig;
 
     // 🔥 players.yml
     private File playersFile;
@@ -89,10 +95,21 @@ public final class Main extends JavaPlugin {
         playerManager = new PlayerManager();
         levelManager = new LevelManager(playerManager);
 
-        MobManager mobManager = new MobManager();
-        MobSpawner mobSpawner = new MobSpawner(mobManager);
-        LootManager lootManager = new LootManager();
-        ZoneManager zoneManager = new ZoneManager(this, mobSpawner, mobManager);
+        mobManager   = new MobManager();
+        mobSpawner   = new MobSpawner(mobManager);
+        lootManager  = new LootManager();
+        debugManager = new DebugManager();
+        zoneManager  = new ZoneManager(this, mobSpawner, mobManager, debugManager);
+
+        // ─── Chargement depuis les fichiers YAML ───────────────────────────
+        mobConfig  = new MobConfig(this, mobManager);
+        lootConfig = new LootConfig(this, lootManager);
+        zoneConfig = new ZoneConfig(this, zoneManager);
+
+        mobConfig.load();
+        lootConfig.load();
+        // Les zones peuvent référencer des mobs → on charge après
+        zoneConfig.load();
 
         getLogger().info("Armesia démarre !");
 
@@ -100,9 +117,10 @@ public final class Main extends JavaPlugin {
         pluginManager.registerEvents(new KillListener(this, statsManager, economyManager), this);
         pluginManager.registerEvents(new PlayersListeners(), this);
         pluginManager.registerEvents(new BlockListener(), this);
-        pluginManager.registerEvents(new MobListener(mobManager, lootManager, zoneManager), this);
+        pluginManager.registerEvents(new MobListener(mobManager, lootManager, zoneManager, debugManager), this);
+        pluginManager.registerEvents(new fr.segame.armesia.zones.ZoneListener(zoneManager, debugManager), this);
 
-        // commandes
+        // ─── Commandes existantes ─────────────────────────────────────────
         getCommand("heal").setExecutor(new HealCommand());
         getCommand("feed").setExecutor(new FeedCommand());
         getCommand("suicide").setExecutor(new SuicideCommand());
@@ -118,24 +136,17 @@ public final class Main extends JavaPlugin {
         getCommand("pay").setExecutor(new EconomyCommand(this));
         getCommand("level").setExecutor(new LevelCommand(this));
 
-        // MOB
-        mobManager.registerMob(
-                new MobData("bandit", "§cBandit", 5, 40, 10, 20, "bandit_loot")
-        );
+        // ─── Nouvelles commandes mob/loot/zone ────────────────────────────
+        MobCommand  mobCmd  = new MobCommand(mobManager, mobConfig, mobSpawner);
+        LootCommand lootCmd = new LootCommand(lootManager, lootConfig);
+        ZoneCommand zoneCmd = new ZoneCommand(zoneManager, mobManager, zoneConfig, debugManager);
 
-        // LOOT
-        lootManager.register("bandit_loot", List.of(
-                new LootData(Material.GOLD_NUGGET, 1, 3, 1.0)
-        ));
-
-        // ZONE
-        zoneManager.registerZone(new ZoneData(
-                "zone1",
-                new Location(Bukkit.getWorlds().get(0), 0, 90, 0),
-                new Location(Bukkit.getWorlds().get(0), 200, 90, 200),
-                List.of("bandit"),
-                5
-        ));
+        getCommand("mob").setExecutor(mobCmd);
+        getCommand("mob").setTabCompleter(mobCmd);
+        getCommand("loot").setExecutor(lootCmd);
+        getCommand("loot").setTabCompleter(lootCmd);
+        getCommand("zone").setExecutor(zoneCmd);
+        getCommand("zone").setTabCompleter(zoneCmd);
 
     }
 
@@ -163,6 +174,13 @@ public final class Main extends JavaPlugin {
     public LevelManager getLevelManager() {
         return levelManager;
     }
+
+    public MobManager getMobManager()   { return mobManager; }
+    public LootManager getLootManager() { return lootManager; }
+    public ZoneManager getZoneManager() { return zoneManager; }
+    public MobConfig getMobConfig()     { return mobConfig; }
+    public LootConfig getLootConfig()   { return lootConfig; }
+    public ZoneConfig getZoneConfig()   { return zoneConfig; }
 
     public static StatsManager getStatsManager() {
         return statsManager;

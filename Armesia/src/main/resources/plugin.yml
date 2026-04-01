@@ -68,10 +68,34 @@ commands:
     description: "Système de niveaux"
     permission: "armesia.level"
     permission-message: "§cVous n'avez pas la permission."
+  mob:
+    description: "Gestion des mobs personnalisés"
+    permission: "armesia.mob"
+    permission-message: "§cVous n'avez pas la permission."
+    aliases:
+      - "mobs"
+  loot:
+    description: "Gestion des tables de loot"
+    permission: "armesia.loot"
+    permission-message: "§cVous n'avez pas la permission."
+    aliases:
+      - "loottable"
+  zone:
+    description: "Gestion des zones de spawn"
+    permission: "armesia.zone"
+    permission-message: "§cVous n'avez pas la permission."
+    aliases:
+      - "zones"
 permissions:
   armesia.heal:
     default: op
   armesia.suicide:
     default: true
   armesia.kill:
+    default: op
+  armesia.mob:
+    default: op
+  armesia.loot:
+    default: op
+  armesia.zone:
     default: op
