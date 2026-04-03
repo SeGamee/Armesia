@@ -2,3 +2,4 @@ rootProject.name = 'Armesia'
 
 include 'Armesia'
 include 'Armesia-Scoreboard'
+include 'Armesia-World'

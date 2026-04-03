@@ -511,17 +511,23 @@ public class ZoneManager {
         return true;
     }
 
-    /** Scanne tous les mondes chargés et récupère les mobs custom orphelins. */
     public void scanAndRecoverAllLoaded() {
+        int recovered = 0, killed = 0;
         for (World world : Bukkit.getWorlds()) {
             for (Entity entity : world.getEntities()) {
                 if (!(entity instanceof LivingEntity le)) continue;
+                // Ignorer les entités sans nos tags PDC (mobs vanilla, joueurs, etc.)
                 String mobId = le.getPersistentDataContainer().get(keyMobId, PersistentDataType.STRING);
                 if (mobId == null) continue;
+                // Déjà suivi → rien à faire
                 if (mobManager.getInstance(entity.getUniqueId()) != null) continue;
-                if (!tryRecoverEntity(entity)) entity.remove();
+                if (tryRecoverEntity(entity)) recovered++;
+                else killed++;
             }
         }
+        if (recovered > 0 || killed > 0)
+            plugin.getLogger().info("[ZoneManager] Démarrage : " + recovered
+                    + " mob(s) restauré(s), " + killed + " mob(s) orphelin(s) supprimé(s).");
     }
 
     // ─── Utilitaires ─────────────────────────────────────────────────────────

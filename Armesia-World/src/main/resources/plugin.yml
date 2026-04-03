@@ -1,0 +1,22 @@
+name: Armesia-World
+version: '${version}'
+main: fr.segame.armesiaWorld.MainWorld
+api-version: '1.20'
+depend: [Armesia]
+description: Plugin de gestion des mondes pour Armesia
+
+commands:
+  world:
+    description: Gestion des mondes
+    usage: /world <create|teleport|list> [args...]
+    permission: armesia.world.use
+  spawn:
+    description: Se téléporter au spawn
+    usage: /spawn
+  setspawn:
+    description: Définir le point de spawn
+    usage: /setspawn
+    permission: armesia.world.setspawn
+
+
+

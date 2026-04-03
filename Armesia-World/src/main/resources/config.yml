@@ -1,0 +1,14 @@
+# Armesia-World - Configuration
+
+# Point de spawn global (défini via /setspawn, ne pas modifier manuellement)
+# spawn:
+#   world: world
+#   x: 0.5
+#   y: 64.0
+#   z: 0.5
+#   yaw: 0.0
+#   pitch: 0.0
+
+# Liste des mondes à charger automatiquement au démarrage du serveur.
+# Remplie automatiquement par /world create — ne pas modifier manuellement.
+worlds: []
