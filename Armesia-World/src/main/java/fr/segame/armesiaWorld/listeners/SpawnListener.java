@@ -26,14 +26,32 @@ public class SpawnListener implements Listener {
         this.teleportManager = teleportManager;
     }
 
-    /** Connexion → tp direct au spawn après 1 tick. */
+    /**
+     * Connexion → téléporte au spawn sans glitch visuel :
+     *  1. on cache le joueur aux autres clients,
+     *  2. on le téléporte synchroniquement (même tick),
+     *  3. au tick suivant, on le révèle à sa bonne position.
+     */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerJoin(PlayerJoinEvent event) {
         if (!spawnManager.hasSpawn()) return;
         Player player = event.getPlayer();
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (player.isOnline()) spawnManager.teleportToSpawn(player);
-        }, 1L);
+
+        // Masque le joueur pour éviter qu'on le voie à l'ancienne position
+        for (Player other : Bukkit.getOnlinePlayers()) {
+            if (!other.equals(player)) other.hidePlayer(plugin, player);
+        }
+
+        // Téléporte immédiatement (synchrone, pas de délai)
+        player.teleport(spawnManager.getSpawn());
+
+        // Révèle le joueur au tick suivant — il est déjà à la bonne position
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!player.isOnline()) return;
+            for (Player other : Bukkit.getOnlinePlayers()) {
+                if (!other.equals(player)) other.showPlayer(plugin, player);
+            }
+        });
     }
 
     /** Mort → respawn au spawn global (sans compte à rebours). */

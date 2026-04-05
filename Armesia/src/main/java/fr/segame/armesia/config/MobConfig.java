@@ -39,7 +39,6 @@ public class MobConfig {
             String path = "mobs." + id;
 
             String name      = config.getString(path + ".name", id);
-            int level        = config.getInt(path + ".level", 1);
             double health    = config.getDouble(path + ".health", 20.0);
             String lootTable = config.getString(path + ".loot-table", "");
             String typeStr   = config.getString(path + ".entity-type", "ZOMBIE");
@@ -59,7 +58,7 @@ public class MobConfig {
                 entityType = EntityType.ZOMBIE;
             }
 
-            mobManager.registerMob(new MobData(id, name, entityType, level, health, moneyMin, moneyMax, xpMin, xpMax, lootTable));
+            mobManager.registerMob(new MobData(id, name, entityType, health, moneyMin, moneyMax, xpMin, xpMax, lootTable));
         }
 
 
@@ -94,7 +93,6 @@ public class MobConfig {
         String path = "mobs." + mob.getId();
         config.set(path + ".name",        mob.getName());
         config.set(path + ".entity-type", mob.getEntityType().name());
-        config.set(path + ".level",       mob.getLevel());
         config.set(path + ".health",      mob.getHealth());
         config.set(path + ".money",       null);          // supprime l'ancienne clé fixe
         config.set(path + ".money-min",   mob.getMoneyMin());

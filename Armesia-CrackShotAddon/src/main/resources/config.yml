@@ -1,0 +1,13 @@
+messages:
+  reloading: "&7&lRECHARGEMENT..."
+  loaded: "&a&lChargé !"
+  format: "{message} {bar} &7&l{time}" # {weapon} » {message} [{bar}] {time}
+
+default:
+  char_full: "█"
+  char_empty: "█" # ░
+  color_full: "&a"
+  color_empty: "&7"
+
+reload:
+  bars: 8

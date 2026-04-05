@@ -7,6 +7,7 @@ import fr.segame.armesia.config.LootConfig;
 import fr.segame.armesia.config.MobConfig;
 import fr.segame.armesia.config.ZoneConfig;
 import fr.segame.armesia.listeners.BlockListener;
+import fr.segame.armesia.listeners.DamageListener;
 import fr.segame.armesia.listeners.KillListener;
 import fr.segame.armesia.listeners.PlayersListeners;
 import fr.segame.armesia.loot.LootManager;
@@ -117,6 +118,7 @@ public final class Main extends JavaPlugin {
         pluginManager.registerEvents(new KillListener(this, statsManager, economyManager), this);
         pluginManager.registerEvents(new PlayersListeners(), this);
         pluginManager.registerEvents(new BlockListener(), this);
+        pluginManager.registerEvents(new DamageListener(this), this);
         pluginManager.registerEvents(new MobListener(mobManager, lootManager, zoneManager, debugManager, economyAPI, levelManager), this);
         pluginManager.registerEvents(new fr.segame.armesia.zones.ZoneListener(zoneManager, debugManager), this);
 

@@ -1,0 +1,83 @@
+Aspirogun:
+  Trail: "REDSTONE"
+  Trail_Color: "255-255-255"
+  Trail_Radius: 3
+  Space_Between_Trails: 0.2
+
+AspirogunFire:
+  Trail: "FLAME"
+  Trail_Radius: 2
+  Space_Between_Trails: 0.2
+
+AspirogunCrit:
+  Trail: "CRIT"
+  Trail_Radius: 2
+  Space_Between_Trails: 0.2
+
+AspirogunMagic:
+  Trail: "SPELL_WITCH"
+  Trail_Radius: 2.5
+  Space_Between_Trails: 0.2
+
+AspirogunSmoke:
+  Trail: "SMOKE_NORMAL"
+  Trail_Radius: 2
+  Space_Between_Trails: 0.2
+
+AspirogunDragon:
+  Trail: "DRAGON_BREATH"
+  Trail_Radius: 2.5
+  Space_Between_Trails: 0.2
+
+AspirogunWater:
+  Trail: "DRIP_WATER"
+  Trail_Radius: 2
+  Space_Between_Trails: 0.2
+
+AspirogunLava:
+  Trail: "DRIP_LAVA"
+  Trail_Radius: 2
+  Space_Between_Trails: 0.2
+
+AspirogunHappy:
+  Trail: "VILLAGER_HAPPY"
+  Trail_Radius: 2
+  Space_Between_Trails: 0.2
+
+AspirogunAngry:
+  Trail: "VILLAGER_ANGRY"
+  Trail_Radius: 2
+  Space_Between_Trails: 0.2
+
+AspirogunHeart:
+  Trail: "HEART"
+  Trail_Radius: 2
+  Space_Between_Trails: 0.2
+
+AspirogunCloud:
+  Trail: "CLOUD"
+  Trail_Radius: 2
+  Space_Between_Trails: 0.2
+
+AspirogunEnchant:
+  Trail: "ENCHANTMENT_TABLE"
+  Trail_Radius: 2.5
+  Space_Between_Trails: 0.2
+
+AspirogunPurple:
+  Trail: "REDSTONE"
+  Trail_Color: "138-43-226"
+  Trail_Radius: 3
+  Space_Between_Trails: 0.2
+
+AspirogunGreen:
+  Trail: "REDSTONE"
+  Trail_Color: "0-255-0"
+  Trail_Radius: 3
+  Space_Between_Trails: 0.2
+
+AspirogunGold:
+  Trail: "REDSTONE"
+  Trail_Color: "255-215-0"
+  Trail_Radius: 3
+  Space_Between_Trails: 0.2

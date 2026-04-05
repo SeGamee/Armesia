@@ -7,7 +7,6 @@ public class MobData {
     private final String id;
     private String name;
     private EntityType entityType;
-    private int level;
     private double health;
     private int moneyMin;
     private int moneyMax;
@@ -15,12 +14,11 @@ public class MobData {
     private int xpMax;
     private String lootTable;
 
-    public MobData(String id, String name, EntityType entityType, int level, double health,
+    public MobData(String id, String name, EntityType entityType, double health,
                    int moneyMin, int moneyMax, int xpMin, int xpMax, String lootTable) {
         this.id = id;
         this.name = name;
         this.entityType = entityType;
-        this.level = level;
         this.health = health;
         this.moneyMin = moneyMin;
         this.moneyMax = moneyMax;
@@ -36,9 +34,6 @@ public class MobData {
 
     public EntityType getEntityType() { return entityType; }
     public void setEntityType(EntityType entityType) { this.entityType = entityType; }
-
-    public int getLevel() { return level; }
-    public void setLevel(int level) { this.level = level; }
 
     public double getHealth() { return health; }
     public void setHealth(double health) { this.health = health; }
