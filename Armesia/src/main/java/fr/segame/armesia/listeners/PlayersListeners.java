@@ -1,7 +1,7 @@
 package fr.segame.armesia.listeners;
 
 import fr.segame.armesia.Main;
-import fr.segame.armesia.player.GamePlayer;
+import fr.segame.armesiaLevel.api.LevelAPI;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
@@ -62,16 +62,11 @@ public class PlayersListeners implements Listener {
         if (group == null) group = "Joueur";
         if (job == null) job = "Citoyen";
 
-        boolean showChatPrefix = Main.chatPrefixEnabled.getOrDefault(joueur.getUniqueId(), true);
 
-        String chatPrefix = "";
-        if (showChatPrefix) {
-            chatPrefix = Main.getGroupChatPrefix(group);
-        }
+        String chatPrefix = Main.getGroupChatPrefix(group);
 
         // Récupération du niveau du joueur
-        GamePlayer gp = Main.getInstance().getPlayerManager().getPlayer(joueur.getUniqueId());
-        int level = gp != null ? gp.getLevel() : 1;
+        int level = LevelAPI.getLevel(joueur.getUniqueId());
         String levelPrefix = "§7[" + level + "✫] ";
 
         event.setFormat(levelPrefix + chatPrefix + "§7" + joueur.getName() + ": §f" + message);

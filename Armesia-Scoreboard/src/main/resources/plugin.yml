@@ -3,3 +3,4 @@ version: '1.0.0'
 main: fr.segame.armesiaScoreboard.MainScoreboard
 api-version: '1.20'
 depend: [Armesia]
+softdepend: [Armesia-Level]

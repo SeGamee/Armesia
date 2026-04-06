@@ -1,8 +1,7 @@
 package fr.segame.armesiaScoreboard;
 
 import fr.segame.armesia.Main;
-import fr.segame.armesia.managers.LevelManager;
-import fr.segame.armesia.player.GamePlayer;
+import fr.segame.armesiaLevel.api.LevelAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.DisplaySlot;
@@ -90,10 +89,9 @@ public class ScoreboardManager {
         int streak = core.getStatsAPI().getKillstreak(uuid);
 
         // 📈 Level
-        LevelManager levelManager = core.getLevelManager();
-        int level  = levelManager.getLevel(uuid);
-        int xp     = levelManager.getXP(uuid);
-        String xpBar = levelManager.getXPBar(uuid, 10);
+        int level  = LevelAPI.getLevel(uuid);
+        int xp     = LevelAPI.getXP(uuid);
+        String xpBar = LevelAPI.getXPBar(uuid, 10);
 
         obj.getScore("§7 ").setScore(10);
         obj.getScore("Niveau: §7%d✫".formatted(level)).setScore(9);
@@ -109,8 +107,7 @@ public class ScoreboardManager {
 
     // ── Injecte la team de tri lvl_ d'un joueur sur un scoreboard donné ──────
     public void injectLevelTeam(Scoreboard board, Player target) {
-        GamePlayer gp = core.getPlayerManager().getPlayer(target.getUniqueId());
-        int level = gp != null ? gp.getLevel() : 1;
+        int level = LevelAPI.getLevel(target.getUniqueId());
         String teamName = String.format("lvl_%04d", 9999 - level);
 
         for (Team t : board.getTeams()) {

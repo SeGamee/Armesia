@@ -2,5 +2,26 @@ groups: {}
 players: {}
 jobs:
   - "Citoyen"
-task:
-  seconds: 10
+antifarm:
+  enabled: true
+  cooldown: 60
+  message: "§cKill non compté (anti-farm) — encore §e{remaining}s §cavant de pouvoir re-tuer §a{killed} §c!"
+kill:
+  message: "§7{killed} §ea été tué par §7{player} !"
+  killerMessage: "§aVous tuez §7{killed} §aet recevez §6{money}$ §aet §b{xp}xp §a!"
+  killedMessage: "§cVous avez été tué par §a{player} §cet perdez §6{money}$ §c!"
+  killerReward:
+    minMoney: 40
+    maxMoney: 60
+    minXp: 20
+    maxXp: 40
+killstreak:
+  1:
+    message: "§a{player} §7a tué {killed} et a un killstreak de {killstreak} !"
+    commands:
+      - "give {player} diamond 1"
+      - "money add {player} 100"
+  5:
+    message: "§a{player} §7a tué {killed} et a un killstreak de {killstreak} !"
+    commands:
+      - "give {player} diamond 5"

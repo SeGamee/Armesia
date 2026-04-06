@@ -1,7 +1,7 @@
 package fr.segame.armesia.managers;
 
 import fr.segame.armesia.Main;
-import fr.segame.armesia.player.GamePlayer;
+import fr.segame.armesiaLevel.api.LevelAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -40,14 +40,9 @@ public class TabManager {
         String group = Main.groups.get(player.getUniqueId());
         group = Main.groupManager.getValidGroupOrDefault(group);
 
-        boolean showTabPrefix = Main.tabPrefixEnabled.getOrDefault(player.getUniqueId(), true);
-        String prefix = "§7";
-        if (showTabPrefix) {
-            prefix = getGroupTabPrefix(group);
-        }
+        String prefix = getGroupTabPrefix(group);
 
-        GamePlayer gp = plugin.getPlayerManager().getPlayer(player.getUniqueId());
-        int level = gp != null ? gp.getLevel() : 1;
+        int level = LevelAPI.getLevel(player.getUniqueId());
 
         player.setPlayerListName("§7[" + level + "✫] " + prefix + player.getName());
 

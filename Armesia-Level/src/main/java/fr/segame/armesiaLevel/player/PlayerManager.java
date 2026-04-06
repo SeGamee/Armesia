@@ -1,0 +1,19 @@
+package fr.segame.armesiaLevel.player;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+public class PlayerManager {
+
+    private final Map<UUID, GamePlayer> players = new HashMap<>();
+
+    public GamePlayer getPlayer(UUID uuid) {
+        return players.computeIfAbsent(uuid, GamePlayer::new);
+    }
+
+    public void removePlayer(UUID uuid) {
+        players.remove(uuid);
+    }
+}
+

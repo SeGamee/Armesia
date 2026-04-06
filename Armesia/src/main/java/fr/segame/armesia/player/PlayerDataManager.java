@@ -62,20 +62,6 @@ public class PlayerDataManager {
         );
         String job = plugin.getConfig().getString("players." + uuid + ".job", "Citoyen");
 
-        boolean showChatPrefix = plugin.getConfig()
-                .getBoolean("players." + uuid + ".show-chat-prefix", true);
-        boolean showTabPrefix  = plugin.getConfig()
-                .getBoolean("players." + uuid + ".show-tab-prefix", true);
-
-        int xp    = playersConfig.getInt("players." + uuid + ".xp",    0);
-        int level = playersConfig.getInt("players." + uuid + ".level", 1);
-
-        GamePlayer gp = plugin.getPlayerManager().getPlayer(uuid);
-        gp.setXp(xp);
-        gp.setLevel(level);
-
-        Main.chatPrefixEnabled.put(uuid, showChatPrefix);
-        Main.tabPrefixEnabled.put(uuid, showTabPrefix);
         Main.groups.put(uuid, group);
         Main.jobs.put(uuid, job);
     }
@@ -84,8 +70,6 @@ public class PlayerDataManager {
         UUID uuid = player.getUniqueId();
         plugin.getConfig().set("players." + uuid + ".group",            Main.groups.get(uuid));
         plugin.getConfig().set("players." + uuid + ".job",              Main.jobs.get(uuid));
-        plugin.getConfig().set("players." + uuid + ".show-chat-prefix", Main.chatPrefixEnabled.get(uuid));
-        plugin.getConfig().set("players." + uuid + ".show-tab-prefix",  Main.tabPrefixEnabled.get(uuid));
         plugin.saveConfig();
     }
 

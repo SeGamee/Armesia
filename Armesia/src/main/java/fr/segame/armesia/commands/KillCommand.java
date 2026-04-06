@@ -21,7 +21,7 @@ public class KillCommand implements CommandExecutor {
                 target.setHealth(0);
                 target.setLastDamageCause(new EntityDamageEvent(target.getPlayer(), EntityDamageEvent.DamageCause.SUICIDE, 0));
                 sender.sendMessage("§7Le joueur a été tué.");
-                target.sendMessage("§7Vous avez été tué par §e%s".formatted(sender.getName()));
+                target.sendMessage("§cVous avez été tué.");
             }
         }
         return true;

@@ -1,17 +1,20 @@
 package fr.segame.armesia.listeners;
 
 import fr.segame.armesia.Main;
-import fr.segame.armesia.managers.LevelManager;
 import fr.segame.armesia.managers.StatsManager;
 import fr.segame.armesia.managers.EconomyManager;
+import fr.segame.armesiaLevel.api.LevelAPI;
 import org.bukkit.Bukkit;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 
 public class KillListener implements Listener {
@@ -19,22 +22,15 @@ public class KillListener implements Listener {
     private final StatsManager statsManager;
     private final EconomyManager economyManager;
     private final Main plugin;
-    
+    private final Random random = new Random();
+
     // Anti farm
     private final Map<UUID, Long> lastKills = new HashMap<>();
-
-    // Streak rewards
-    private final Map<Integer, Integer> streakRewards = new HashMap<>();
 
     public KillListener(Main plugin, StatsManager statsManager, EconomyManager economyManager) {
         this.plugin = plugin;
         this.statsManager = statsManager;
         this.economyManager = economyManager;
-
-        // Configurable
-        streakRewards.put(3, 100);
-        streakRewards.put(5, 200);
-        streakRewards.put(10, 500);
     }
 
     @EventHandler
@@ -56,21 +52,28 @@ public class KillListener implements Listener {
         UUID killerUUID = killer.getUniqueId();
 
         // ===== ANTI FARM =====
-        /*if (lastKills.containsKey(victimUUID)) {
+        boolean antifarmEnabled = plugin.getConfig().getBoolean("antifarm.enabled", true);
+        long cooldownMs = plugin.getConfig().getLong("antifarm.cooldown", 60) * 1000L;
+
+        if (antifarmEnabled && lastKills.containsKey(victimUUID)) {
             long last = lastKills.get(victimUUID);
 
-            if (System.currentTimeMillis() - last < 60000) {
-                killer.sendMessage("§cKill non compté (anti-farm)");
+            if (System.currentTimeMillis() - last < cooldownMs) {
+                long remaining = (cooldownMs - (System.currentTimeMillis() - last)) / 1000;
+                String afMsg = plugin.getConfig().getString("antifarm.message",
+                        "§cKill non compté (anti-farm) — encore §e{remaining}s §c!");
+                killer.sendMessage(afMsg
+                        .replace("{remaining}", String.valueOf(remaining))
+                        .replace("{killed}", victim.getName())
+                        .replace("{player}", killer.getName()));
                 return;
             }
-        }*/
+        }
 
         lastKills.put(victimUUID, System.currentTimeMillis());
 
         // ===== KILL =====
         statsManager.addKill(killerUUID);
-
-        plugin.getLevelManager().addXP(killer.getUniqueId(), 100);
 
         // ===== STREAK =====
         statsManager.addKillstreak(killerUUID);
@@ -81,32 +84,96 @@ public class KillListener implements Listener {
             statsManager.setBestKillstreak(killerUUID, streak);
         }
 
-        // ===== REWARD =====
-        int reward = 100 + (streak * 10);
-        economyManager.addMoney(killerUUID, reward);
+        // ===== KILL CONFIG =====
+        ConfigurationSection killSection = plugin.getConfig().getConfigurationSection("kill");
 
-        // ===== BONUS STREAK =====
-        if (streakRewards.containsKey(streak)) {
-            int bonus = streakRewards.get(streak);
-            economyManager.addMoney(killerUUID, bonus);
+        int minMoney = 100, maxMoney = 100, minXp = 100, maxXp = 100;
+        String broadcastMsg = null, killerMsg = null, killedMsg = null;
 
-            killer.sendMessage("§6Bonus streak: +" + bonus + "$");
+        if (killSection != null) {
+            ConfigurationSection rewardSection = killSection.getConfigurationSection("killerReward");
+            if (rewardSection != null) {
+                minMoney = rewardSection.getInt("minMoney", 100);
+                maxMoney = rewardSection.getInt("maxMoney", 100);
+                minXp    = rewardSection.getInt("minXp",    100);
+                maxXp    = rewardSection.getInt("maxXp",    100);
+            }
+            broadcastMsg = killSection.getString("message");
+            killerMsg    = killSection.getString("killerMessage");
+            killedMsg    = killSection.getString("killedMessage");
         }
 
-        // ===== ANNOUNCES =====
-        if (streak == 3) {
-            Bukkit.broadcastMessage("§e" + killer.getName() + " est en série de 3 kills !");
+        // Récompenses aléatoires dans la plage configurée
+        int moneyReward = minMoney + (maxMoney > minMoney ? random.nextInt(maxMoney - minMoney + 1) : 0);
+        int xpReward    = minXp    + (maxXp    > minXp    ? random.nextInt(maxXp    - minXp    + 1) : 0);
+
+        // ===== REWARD KILLER =====
+        economyManager.addMoney(killerUUID, moneyReward);
+        LevelAPI.addXP(killerUUID, xpReward);
+
+        // ===== LOSS VICTIM =====
+        double victimBalance = economyManager.getMoney(victimUUID);
+        double lostMoney = Math.min(victimBalance, moneyReward);
+        if (lostMoney > 0) economyManager.removeMoney(victimUUID, lostMoney);
+
+        // ===== MESSAGES =====
+        // Broadcast global
+        if (broadcastMsg != null) {
+            Bukkit.broadcastMessage(broadcastMsg
+                    .replace("{player}", killer.getName())
+                    .replace("{killed}", victim.getName()));
         }
 
-        if (streak == 5) {
-            Bukkit.broadcastMessage("§6" + killer.getName() + " est en feu !");
+        // Message au tueur
+        if (killerMsg != null) {
+            killer.sendMessage(killerMsg
+                    .replace("{player}", killer.getName())
+                    .replace("{killed}", victim.getName())
+                    .replace("{money}", String.valueOf(moneyReward))
+                    .replace("{xp}",   String.valueOf(xpReward))
+                    .replace("{killstreak}", String.valueOf(streak)));
         }
 
-        if (streak == 10) {
-            Bukkit.broadcastMessage("§c⚠ " + killer.getName() + " DOMINE LE SERVEUR !");
+        // Message à la victime
+        if (killedMsg != null) {
+            victim.sendMessage(killedMsg
+                    .replace("{player}", killer.getName())
+                    .replace("{killed}", victim.getName())
+                    .replace("{money}", String.format("%.0f", lostMoney))
+                    .replace("{killstreak}", String.valueOf(streak)));
         }
 
-        // ===== MESSAGE =====
-        killer.sendMessage("§6[Kill] §f+§a" + reward + "$ §fet + §b100xp §7(Streak: " + streak + ")");
+        // ===== KILLSTREAK CONFIG =====
+        ConfigurationSection ksSection = plugin.getConfig().getConfigurationSection("killstreak");
+        if (ksSection != null) {
+            for (String key : ksSection.getKeys(false)) {
+                int threshold;
+                try {
+                    threshold = Integer.parseInt(key);
+                } catch (NumberFormatException e) {
+                    continue;
+                }
+
+                if (streak != threshold) continue;
+
+                // Message de broadcast
+                String message = ksSection.getString(key + ".message");
+                if (message != null) {
+                    Bukkit.broadcastMessage(message
+                            .replace("{player}", killer.getName())
+                            .replace("{killed}", victim.getName())
+                            .replace("{killstreak}", String.valueOf(streak)));
+                }
+
+                // Commandes exécutées en console
+                List<String> commands = ksSection.getStringList(key + ".commands");
+                for (String cmd : commands) {
+                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd
+                            .replace("{player}", killer.getName())
+                            .replace("{killed}", victim.getName())
+                            .replace("{killstreak}", String.valueOf(streak)));
+                }
+            }
+        }
     }
 }
