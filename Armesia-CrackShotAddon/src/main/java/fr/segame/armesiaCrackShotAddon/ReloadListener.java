@@ -3,6 +3,7 @@ package fr.segame.armesiaCrackShotAddon;
 import com.shampaggon.crackshot.CSUtility;
 import com.shampaggon.crackshot.events.*;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -10,6 +11,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -356,5 +358,12 @@ public class ReloadListener implements Listener {
         }
 
         return null;
+    }
+
+    @EventHandler
+    public void onInteract(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+
+        player.setCooldown(Material.CARROT_ON_A_STICK, 100);
     }
 }

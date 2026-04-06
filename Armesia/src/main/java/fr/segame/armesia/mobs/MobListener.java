@@ -7,11 +7,15 @@ import fr.segame.armesia.managers.LevelManager;
 import fr.segame.armesia.zones.ZoneData;
 import fr.segame.armesia.zones.ZoneManager;
 import org.bukkit.ChatColor;
+import org.bukkit.entity.AbstractVillager;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
+import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.*;
-import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 
 import java.util.Random;
 
@@ -46,30 +50,16 @@ public class MobListener implements Listener {
         }
     }
 
-    // 🧹 CLEAN MOBS EXISTANTS AU CHARGEMENT DE CHUNK
-    @EventHandler
-    public void onChunkLoad(ChunkLoadEvent event) {
-        for (var entity : event.getChunk().getEntities()) {
-            if (entity instanceof org.bukkit.entity.Player) continue;
-            if (entity instanceof org.bukkit.entity.Monster
-                    || entity instanceof org.bukkit.entity.Animals
-                    || entity instanceof org.bukkit.entity.Golem) {
-                if (mobManager.getInstance(entity.getUniqueId()) == null) {
-                    debug.logVerbose("§6[CLEANUP]§7 type=§f" + entity.getType().name()
-                            + "§7 raison=§6NON_ENREGISTRÉ");
-                    entity.remove();
-                }
-            }
-        }
-    }
 
-    // 💀 MORT
+    // 🗑️ DROPS — vide pour TOUS les mobs (vanilla ou custom)
     @EventHandler
     public void onDeath(EntityDeathEvent event) {
+        // Toujours supprimer les drops et l'XP vanilla, peu importe le mob
+        event.getDrops().clear();
+        event.setDroppedExp(0);
+
         MobInstance instance = mobManager.getInstance(event.getEntity().getUniqueId());
         if (instance == null) return;
-
-        event.getDrops().clear();
 
         Player player = event.getEntity().getKiller();
         if (player == null) return;
@@ -79,15 +69,12 @@ public class MobListener implements Listener {
 
         lootManager.dropLoot(event.getEntity().getLocation(), data.getLootTable());
 
-        // Tirage aléatoire argent
         int money = randBetween(data.getMoneyMin(), data.getMoneyMax());
-        // Tirage aléatoire XP
-        int xp = randBetween(data.getXpMin(), data.getXpMax());
+        int xp    = randBetween(data.getXpMin(),    data.getXpMax());
 
         if (money > 0) economyAPI.addMoney(player.getUniqueId(), money);
         if (xp > 0)    levelManager.addXP(player.getUniqueId(), xp);
 
-        // Message de kill
         String mobName = ChatColor.translateAlternateColorCodes('&', data.getName());
         player.sendMessage(ChatColor.translateAlternateColorCodes('&',
                 "&aVous avez tué " + mobName + " &a→ &6+" + money + "$ &7| &b+" + xp + "XP"));
@@ -142,5 +129,44 @@ public class MobListener implements Listener {
         if (instance == null) return;
 
         event.setCancelled(true);
+    }
+
+    // 🕊️ VILLAGEOIS PACIFIQUES — annuler tous les dégâts sauf ceux des joueurs
+    //    Les dégâts de l'environnement / mobs déclenchent le Brain PANIC du villageois
+    //    ce qui active un boost de vitesse via le pathfinder.
+    //    Les joueurs peuvent toujours les tuer pour obtenir leur loot (direct + projectile).
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onVillagerDamage(EntityDamageEvent event) {
+        if (!(event.getEntity() instanceof Villager)) return;
+        if (mobManager.getInstance(event.getEntity().getUniqueId()) == null) return;
+
+        if (event instanceof EntityDamageByEntityEvent dmg) {
+            // Coup direct d'un joueur
+            if (dmg.getDamager() instanceof Player) return;
+            // Projectile (flèche, trident…) tiré par un joueur
+            if (dmg.getDamager() instanceof Projectile proj && proj.getShooter() instanceof Player) return;
+        }
+        event.setCancelled(true);
+    }
+
+    // 💊 PAS DE RÉGÉNÉRATION — bloque tout regen vanilla (sommeil, nourriture, potion…)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onRegen(EntityRegainHealthEvent event) {
+        if (mobManager.getInstance(event.getEntity().getUniqueId()) == null) return;
+        event.setCancelled(true);
+    }
+
+    // 🐾 PAS D'APPRIVOISEMENT
+    @EventHandler
+    public void onTame(EntityTameEvent event) {
+        event.setCancelled(true);
+    }
+
+    // 🚫 PAS D'INTERACTION VILLAGEOIS (commerce, GUI)
+    @EventHandler
+    public void onInteractEntity(PlayerInteractEntityEvent event) {
+        if (event.getRightClicked() instanceof AbstractVillager) {
+            event.setCancelled(true);
+        }
     }
 }

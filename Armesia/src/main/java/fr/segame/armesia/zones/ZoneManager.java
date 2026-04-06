@@ -5,14 +5,13 @@ import fr.segame.armesia.mobs.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
-import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.World;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
-import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.entity.Villager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Vector;
 
@@ -35,17 +34,11 @@ public class ZoneManager {
     /** Joueurs ayant une prévisualisation de bordure active : UUID → set des IDs de zones */
     private final Map<UUID, Set<String>> previewingPlayers    = new HashMap<>();
 
-    /** Clés PDC pour identifier les mobs custom après redémarrage / rechargement de chunk */
-    private final NamespacedKey keyMobId;
-    private final NamespacedKey keyZoneId;
-
     public ZoneManager(JavaPlugin plugin, MobSpawner spawner, MobManager mobManager, DebugManager debug) {
         this.plugin     = plugin;
         this.spawner    = spawner;
         this.mobManager = mobManager;
         this.debug      = debug;
-        this.keyMobId   = new NamespacedKey(plugin, MobSpawner.KEY_MOB_ID);
-        this.keyZoneId  = new NamespacedKey(plugin, MobSpawner.KEY_ZONE_ID);
         startTasks();
     }
 
@@ -135,6 +128,7 @@ public class ZoneManager {
             loc = loc.getWorld().getHighestBlockAt(loc).getLocation().add(0, 1, 0);
             if (!isInZone(loc, zone)) continue;
             if (loc.getBlock().isLiquid()) continue;
+            if (loc.clone().subtract(0, 1, 0).getBlock().isLiquid()) continue; // surface liquide
             if (isLookingAt(player, loc)) continue;
             return loc;
         }
@@ -160,8 +154,6 @@ public class ZoneManager {
 
     private void startTasks() {
 
-        // Scan de récupération au démarrage (2 secondes, le temps que les chunks de spawn se chargent)
-        Bukkit.getScheduler().runTaskLater(plugin, this::scanAndRecoverAllLoaded, 40L);
 
         // ── Despawn + Redirection — 1 tick/s, intervalle réel par zone ────
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
@@ -185,13 +177,7 @@ public class ZoneManager {
                 Entity entity = Bukkit.getEntity(instance.getUuid());
 
                 if (entity == null) {
-                    // Distinguer chunk déchargé (entity sauvegardée) vs mob réellement mort
-                    Location last = instance.getLastLoc();
-                    if (last != null && last.getWorld() != null
-                            && !last.getWorld().isChunkLoaded(last.getBlockX() >> 4, last.getBlockZ() >> 4)) {
-                        continue; // chunk non chargé → entité existe sur disque, ne pas supprimer le suivi
-                    }
-                    it.remove(); // chunk chargé et entité absente → mob réellement mort
+                    it.remove();
                     continue;
                 }
 
@@ -200,8 +186,6 @@ public class ZoneManager {
                     continue;
                 }
 
-                // Mise à jour de la dernière position connue
-                instance.updateLoc(mob.getLocation());
 
                 ZoneData homeZone = zones.get(instance.getZoneId());
 
@@ -284,7 +268,23 @@ public class ZoneManager {
 
                 ZoneData zone = zones.get(instance.getZoneId());
                 if (zone == null || zone.getPos1() == null || zone.getPos2() == null) continue;
-                if (isInZone(mob.getLocation(), zone)) continue;
+
+                Location mobLoc = mob.getLocation();
+
+                // ── Anti-eau : téléporter hors du liquide ──────────────────
+                if (mobLoc.getBlock().isLiquid()
+                        || mobLoc.clone().subtract(0, 1, 0).getBlock().isLiquid()) {
+                    Location dry = getRandomLocation(zone);
+                    if (dry != null) {
+                        mob.getPathfinder().stopPathfinding();
+                        mob.teleport(dry);
+                        debug.logVerbose("§b[WATER-TP]§7 mob=§f" + instance.getMobId()
+                                + "§7 zone=§f" + zone.getId());
+                    }
+                    continue;
+                }
+
+                if (isInZone(mobLoc, zone)) continue;
 
                 double distOutside = getDistanceOutside(mob.getLocation(), zone);
                 if (distOutside <= zone.getBoundaryTolerance()) continue;
@@ -425,110 +425,97 @@ public class ZoneManager {
                     continue;
                 }
 
-                // ── Chance pure (indépendante du nombre de mobs présents) ─
-                // spawnchance=1.0 → spawn garanti à chaque intervalle
-                // spawnchance=0.5 → 50% de chance par intervalle
-                if (zone.getSpawnChance() < 1.0 && random.nextDouble() >= zone.getSpawnChance()) {
+                // ── Palier de boost spawn ─────────────────────────────────
+                // fill = fraction du target atteinte (0.0 = aucun mob, 1.0 = cap)
+                double fill = target > 0 ? (double) nearby / target : 1.0;
+                double effectiveChance;
+                int    burstCount;
+                int    boostTier;
+
+                if (fill < zone.getSpawnBoostRatio1()) {
+                    effectiveChance = Math.min(1.0, zone.getSpawnChance() * zone.getSpawnBoostMultiplier1());
+                    burstCount      = zone.getSpawnBoostCount1();
+                    boostTier       = 1;
+                } else if (fill < zone.getSpawnBoostRatio2()) {
+                    effectiveChance = Math.min(1.0, zone.getSpawnChance() * zone.getSpawnBoostMultiplier2());
+                    burstCount      = zone.getSpawnBoostCount2();
+                    boostTier       = 2;
+                } else if (fill < zone.getSpawnBoostRatio3()) {
+                    effectiveChance = Math.min(1.0, zone.getSpawnChance() * zone.getSpawnBoostMultiplier3());
+                    burstCount      = zone.getSpawnBoostCount3();
+                    boostTier       = 3;
+                } else {
+                    effectiveChance = zone.getSpawnChance();
+                    burstCount      = 1;
+                    boostTier       = 0;
+                }
+
+                // ── Chance (avec boost éventuel) ──────────────────────────
+                if (effectiveChance < 1.0 && random.nextDouble() >= effectiveChance) {
                     debug.logVerbose("§e[SKIP]§7 zone=§f" + zone.getId()
                             + "§7 raison=§eCHANCE proba=§f"
-                            + String.format("%.0f%%", zone.getSpawnChance() * 100));
+                            + String.format("%.0f%%", effectiveChance * 100)
+                            + (boostTier > 0 ? " §8(boost tier§f" + boostTier + "§8)" : ""));
                     continue;
                 }
 
-                // ── Position de spawn ─────────────────────────────────────
-                Location loc = getSmartSpawnLocation(player, zone);
-                if (loc == null) {
-                    debug.logVerbose("§e[SKIP]§7 zone=§f" + zone.getId() + "§7 raison=§ePAS_DE_POSITION");
-                    continue;
+                // ── Burst spawn ────────────────────────────────────────────
+                int  spawned    = 0;
+                long totalAfter = total;
+                for (int b = 0; b < burstCount; b++) {
+                    if (zone.getMax() > 0 && totalAfter >= zone.getMax()) break;
+                    int nearbyNow = (b == 0) ? nearby : countMobsAroundPlayer(player, zone);
+                    if (nearbyNow >= target) break;
+
+                    Location loc = getSmartSpawnLocation(player, zone);
+                    if (loc == null) break;
+
+                    List<String> effectiveMobs = getEffectiveMobs(zone, loc);
+                    if (effectiveMobs.isEmpty()) break;
+
+                    String mobId = pickWeightedMob(effectiveMobs, zone);
+                    MobData data = mobManager.getMob(mobId);
+                    if (data == null) break;
+
+                    spawner.spawnMob(loc, data, zone.getId());
+                    totalAfter++;
+                    spawned++;
+
+                    if (debug.hasAny()) {
+                        final Location bl = loc.clone().add(0, 1, 0);
+                        debug.forEachDebugPlayer(p -> p.spawnParticle(Particle.REDSTONE,
+                                bl, 30, 0.4, 0.6, 0.4, 0,
+                                new Particle.DustOptions(Color.fromRGB(0, 255, 80), 1.5f)));
+                    }
                 }
 
-                // ── Mob à spawner ─────────────────────────────────────────
-                List<String> effectiveMobs = getEffectiveMobs(zone, loc);
-                if (effectiveMobs.isEmpty()) {
-                    debug.logVerbose("§e[SKIP]§7 zone=§f" + zone.getId() + "§7 raison=§ePAS_DE_MOB");
-                    continue;
+                if (spawned > 0) {
+                    zoneSpawnTicker.put(zone.getId(), 0);
+                    debug.log("§a[SPAWN]§7 zone=§f" + zone.getId()
+                            + "§7 burst=§f" + spawned
+                            + (boostTier > 0 ? " §8(tier§f" + boostTier + "×" + String.format("%.1f", boostTier == 1 ? zone.getSpawnBoostMultiplier1() : boostTier == 2 ? zone.getSpawnBoostMultiplier2() : zone.getSpawnBoostMultiplier3()) + "§8)" : "")
+                            + "§7 fill=§f" + String.format("%.0f%%", fill * 100)
+                            + "§7 nearby=§f" + nearby + "§7/§f" + target
+                            + "§7 total=§f" + totalAfter + "§7/§f" + zone.getMax());
                 }
-
-                String mobId = pickWeightedMob(effectiveMobs, zone);
-                MobData data = mobManager.getMob(mobId);
-                if (data == null) {
-                    debug.logVerbose("§e[SKIP]§7 zone=§f" + zone.getId()
-                            + "§7 raison=§eMOB_INCONNU id=§f" + mobId);
-                    continue;
-                }
-
-                // ── Spawn + reset timer ───────────────────────────────────
-                spawner.spawnMob(loc, data, zone.getId());
-                zoneSpawnTicker.put(zone.getId(), 0); // repart de zéro
-
-                // Burst vert visible par les joueurs en debug
-                if (debug.hasAny()) {
-                    final Location bl = loc.clone().add(0, 1, 0);
-                    debug.forEachDebugPlayer(p -> p.spawnParticle(Particle.REDSTONE,
-                            bl, 30, 0.4, 0.6, 0.4, 0,
-                            new Particle.DustOptions(Color.fromRGB(0, 255, 80), 1.5f)));
-                }
-
-                debug.log("§a[SPAWN]§7 zone=§f" + zone.getId()
-                        + "§7 mob=§f" + data.getId()
-                        + "§7 pos=(§f" + String.format("%.0f,%.0f,%.0f", loc.getX(), loc.getY(), loc.getZ()) + "§7)"
-                        + "§7 nearby=§f" + nearby + "§7/§f" + target
-                        + "§7 total=§f" + (total + 1) + "§7/§f" + zone.getMax());
             }
 
         }, 0L, 20L);
-    }
 
-    // ─── Récupération des mobs après redémarrage / rechargement de chunk ─────
-
-    /**
-     * Tente de ré-enregistrer une entité dans mobManager si elle porte les tags PDC
-     * de ce plugin mais n'est pas encore suivie.
-     * Retourne true si l'entité a été récupérée ou était déjà suivie.
-     */
-    public boolean tryRecoverEntity(Entity entity) {
-        if (!(entity instanceof LivingEntity le)) return false;
-        String mobId  = le.getPersistentDataContainer().get(keyMobId,  PersistentDataType.STRING);
-        String zoneId = le.getPersistentDataContainer().get(keyZoneId, PersistentDataType.STRING);
-        if (mobId == null || zoneId == null) return false;
-
-        // Déjà suivi ?
-        if (mobManager.getInstance(entity.getUniqueId()) != null) return true;
-
-        // La zone / le type de mob existent encore ?
-        ZoneData zone = zones.get(zoneId);
-        MobData  mob  = mobManager.getMob(mobId);
-        if (zone == null || mob == null) {
-            entity.remove(); // orphelin invalide
-            debug.log("§c[CLEANUP]§7 mob orphelin supprimé §f(zone=" + zoneId + " mob=" + mobId + ")");
-            return false;
-        }
-
-        MobInstance inst = new MobInstance(entity.getUniqueId(), mobId, zoneId);
-        inst.updateLoc(entity.getLocation());
-        mobManager.addInstance(inst);
-        debug.log("§b[RESTORE]§7 mob ré-enregistré §f" + mobId + " §7zone=§f" + zoneId);
-        return true;
-    }
-
-    public void scanAndRecoverAllLoaded() {
-        int recovered = 0, killed = 0;
-        for (World world : Bukkit.getWorlds()) {
-            for (Entity entity : world.getEntities()) {
-                if (!(entity instanceof LivingEntity le)) continue;
-                // Ignorer les entités sans nos tags PDC (mobs vanilla, joueurs, etc.)
-                String mobId = le.getPersistentDataContainer().get(keyMobId, PersistentDataType.STRING);
-                if (mobId == null) continue;
-                // Déjà suivi → rien à faire
-                if (mobManager.getInstance(entity.getUniqueId()) != null) continue;
-                if (tryRecoverEntity(entity)) recovered++;
-                else killed++;
+        // ── Villageois pacifiques : annuler le boost vitesse de panique ──────
+        //    Le Brain PANIC peut ajouter des modificateurs à l'attribut de vitesse.
+        //    On les purge toutes les 10 ticks (0.5 s) comme filet de sécurité.
+        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            for (MobInstance instance : new ArrayList<>(mobManager.getAllInstances())) {
+                Entity entity = Bukkit.getEntity(instance.getUuid());
+                if (!(entity instanceof Villager villager)) continue;
+                var attr = villager.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+                if (attr == null || attr.getModifiers().isEmpty()) continue;
+                new ArrayList<>(attr.getModifiers()).forEach(attr::removeModifier);
             }
-        }
-        if (recovered > 0 || killed > 0)
-            plugin.getLogger().info("[ZoneManager] Démarrage : " + recovered
-                    + " mob(s) restauré(s), " + killed + " mob(s) orphelin(s) supprimé(s).");
+        }, 0L, 10L);
     }
+
 
     // ─── Utilitaires ─────────────────────────────────────────────────────────
 
@@ -584,7 +571,8 @@ public class ZoneManager {
             double z = minZ + random.nextDouble() * (maxZ - minZ);
             Location loc = zone.getPos1().getWorld()
                     .getHighestBlockAt((int) x, (int) z).getLocation().add(0.5, 1, 0.5);
-            if (!loc.getBlock().isLiquid()) return loc;
+            if (!loc.getBlock().isLiquid()
+                    && !loc.clone().subtract(0, 1, 0).getBlock().isLiquid()) return loc;
         }
         return getCenter(zone);
     }

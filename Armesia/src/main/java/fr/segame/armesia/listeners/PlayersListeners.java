@@ -19,7 +19,7 @@ public class PlayersListeners implements Listener {
         Player joueur = event.getPlayer();
         Main.loadPlayer(joueur);
         Main.updateAllTabs();
-        Component component = Component.text("[+] " + joueur.getName());
+        Component component = Component.text("§7[§a+§7] " + joueur.getName());
         event.joinMessage(component);
     }
 
@@ -27,14 +27,14 @@ public class PlayersListeners implements Listener {
     public void onQuit(PlayerQuitEvent event) {
         Player joueur = event.getPlayer();
         Main.savePlayer(joueur);
-        Component component = Component.text("[-] " + joueur.getName());
+        Component component = Component.text("§7[§c+§7] " + joueur.getName());
         event.quitMessage(component);
     }
 
     @EventHandler
     public void onDeathMessage(PlayerDeathEvent event) {
         Player player = event.getEntity();
-        if(player.getLastDamageCause().getCause() == EntityDamageEvent.DamageCause.FALL) {
+        if(player.getLastDamageCause() != null && player.getLastDamageCause().getCause() == EntityDamageEvent.DamageCause.FALL) {
             Component component = Component.text()
                     .append(player.displayName().color(NamedTextColor.GRAY))
                     .append(Component.text(" vient de mourir de chute.", NamedTextColor.YELLOW))

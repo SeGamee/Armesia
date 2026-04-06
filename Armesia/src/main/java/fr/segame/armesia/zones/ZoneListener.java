@@ -1,9 +1,7 @@
 package fr.segame.armesia.zones;
 
 import fr.segame.armesia.managers.DebugManager;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -11,7 +9,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.world.ChunkLoadEvent;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -129,21 +126,6 @@ public class ZoneListener implements Listener {
         UUID uuid = event.getPlayer().getUniqueId();
         playerZone.remove(uuid);
         playerTier.remove(uuid);
-    }
-
-    /**
-     * Quand un chunk (re)charge ses entités, on tente de ré-enregistrer
-     * les mobs custom qui y étaient sauvegardés (persistent=true).
-     * On diffère d'un tick pour être sûr que getEntities() est complet.
-     */
-    @EventHandler
-    public void onChunkLoad(ChunkLoadEvent event) {
-        if (event.isNewChunk()) return; // un nouveau chunk ne peut pas contenir nos mobs
-        Bukkit.getScheduler().runTask(zoneManager.getPlugin(), () -> {
-            for (Entity entity : event.getChunk().getEntities()) {
-                zoneManager.tryRecoverEntity(entity);
-            }
-        });
     }
 
     // ─── Utilitaires ─────────────────────────────────────────────────────────

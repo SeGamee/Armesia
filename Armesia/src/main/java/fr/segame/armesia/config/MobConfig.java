@@ -58,7 +58,8 @@ public class MobConfig {
                 entityType = EntityType.ZOMBIE;
             }
 
-            mobManager.registerMob(new MobData(id, name, entityType, health, moneyMin, moneyMax, xpMin, xpMax, lootTable));
+            MobData mobData = new MobData(id, name, entityType, health, moneyMin, moneyMax, xpMin, xpMax, lootTable);
+            mobManager.registerMob(mobData);
         }
 
 

@@ -2,30 +2,27 @@ package fr.segame.armesia.mobs;
 
 import fr.segame.armesia.Main;
 import org.bukkit.Location;
-import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Villager;
 import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.persistence.PersistentDataType;
 
 public class MobSpawner {
 
-    /** Clés PDC — persistées dans le NBT de l'entité, survivent aux redémarrages */
-    public static final String KEY_MOB_ID  = "armesia_mob_id";
-    public static final String KEY_ZONE_ID = "armesia_zone_id";
-
-    private final MobManager    mobManager;
-    private final NamespacedKey keyMobId;
-    private final NamespacedKey keyZoneId;
+    private final MobManager mobManager;
 
     public MobSpawner(MobManager mobManager) {
         this.mobManager = mobManager;
-        this.keyMobId   = new NamespacedKey(Main.getInstance(), KEY_MOB_ID);
-        this.keyZoneId  = new NamespacedKey(Main.getInstance(), KEY_ZONE_ID);
     }
 
     public void spawnMob(Location loc, MobData data, String zoneId) {
+
+        // ── Garde anti-eau : ne jamais spawner dans/sur de l'eau ─────────────
+        if (loc.getBlock().isLiquid()
+                || loc.clone().subtract(0, 1, 0).getBlock().isLiquid()) {
+            return;
+        }
 
         Entity entity = loc.getWorld().spawnEntity(loc, data.getEntityType());
 
@@ -43,15 +40,17 @@ public class MobSpawner {
             mob.setHealth(data.getHealth());
         }
 
-        mob.setPersistent(true);           // sauvegardé dans le monde → survit aux déchargements de chunks
-        mob.setRemoveWhenFarAway(false);   // pas de despawn naturel Minecraft
+        // ── Villageois : vitesse réduite (défaut Minecraft = 0.5, trop rapide) ──
+        if (mob instanceof Villager) {
+            var speedAttr = mob.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+            if (speedAttr != null) speedAttr.setBaseValue(0.25);
+        }
+
+        mob.setRemoveWhenFarAway(false);   // pas de despawn naturel Minecraft pendant la session
 
         // Métadonnée légère (session uniquement)
         mob.setMetadata("customMob", new FixedMetadataValue(Main.getInstance(), true));
 
-        // Tags PDC : persistés dans le NBT → permettent la ré-identification après redémarrage
-        mob.getPersistentDataContainer().set(keyMobId,  PersistentDataType.STRING, data.getId());
-        mob.getPersistentDataContainer().set(keyZoneId, PersistentDataType.STRING, zoneId);
 
         mobManager.addInstance(new MobInstance(mob.getUniqueId(), data.getId(), zoneId));
     }

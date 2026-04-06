@@ -12,117 +12,144 @@ import fr.segame.armesia.listeners.KillListener;
 import fr.segame.armesia.listeners.PlayersListeners;
 import fr.segame.armesia.loot.LootManager;
 import fr.segame.armesia.managers.*;
-import fr.segame.armesia.player.GamePlayer;import fr.segame.armesia.mobs.MobListener;
+import fr.segame.armesia.mobs.MobListener;
 import fr.segame.armesia.mobs.MobManager;
 import fr.segame.armesia.mobs.MobSpawner;
+import fr.segame.armesia.player.PlayerDataManager;
+import fr.segame.armesia.zones.ZoneListener;
 import fr.segame.armesia.zones.ZoneManager;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.ChatColor;
-import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.Team;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 public final class Main extends JavaPlugin {
 
     public static Main instance;
-    public static GroupManager groupManager;
-    public static StatsManager statsManager;
+
+    // ─── Managers statiques (accès direct depuis toute la codebase) ─────────────
+    public static GroupManager   groupManager;
+    public static StatsManager   statsManager;
     public static EconomyManager economyManager;
-    private EconomyAPI economyAPI;
-    private StatsAPI statsAPI;
-    private PlayerManager playerManager;
-    private LevelManager levelManager;
 
-    // Système de mobs/zones/loots
-    private MobManager  mobManager;
-    private MobSpawner  mobSpawner;
-    private LootManager lootManager;
-    private ZoneManager zoneManager;
-    private DebugManager debugManager;
-    private MobConfig   mobConfig;
-    private LootConfig  lootConfig;
-    private ZoneConfig  zoneConfig;
-
-    // 🔥 players.yml
-    private File playersFile;
-    private FileConfiguration playersConfig;
-
-    public FileConfiguration getPlayersConfig() {
-        return playersConfig;
-    }
-
-    public void savePlayers() {
-        try {
-            playersConfig.save(playersFile);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
+    // ─── Caches joueur partagés (lus/écrits par PlayerDataManager & compagnie) ──
     public static Map<UUID, Boolean> chatPrefixEnabled = new HashMap<>();
-    public static Map<UUID, Boolean> tabPrefixEnabled = new HashMap<>();
-    public static Map<UUID, String> groups = new HashMap<>();
-    public static Map<UUID, String> jobs = new HashMap<>();
+    public static Map<UUID, Boolean> tabPrefixEnabled  = new HashMap<>();
+    public static Map<UUID, String>  groups            = new HashMap<>();
+    public static Map<UUID, String>  jobs              = new HashMap<>();
+
+    // ─── Managers d'instance ────────────────────────────────────────────────────
+    private EconomyAPI        economyAPI;
+    private StatsAPI          statsAPI;
+    private PlayerManager     playerManager;
+    private LevelManager      levelManager;
+    private PlayerDataManager playerDataManager;
+    private TabManager        tabManager;
+
+    // ─── Système mobs / zones / loots ───────────────────────────────────────────
+    private MobManager   mobManager;
+    private MobSpawner   mobSpawner;
+    private LootManager  lootManager;
+    private ZoneManager  zoneManager;
+    private DebugManager debugManager;
+    private MobConfig    mobConfig;
+    private LootConfig   lootConfig;
+    private ZoneConfig   zoneConfig;
+
+    // ============================================================================
+    //  Cycle de vie du plugin
+    // ============================================================================
 
     @Override
     public void onEnable() {
         instance = this;
-
-        // 🔥 CONFIG PRINCIPAL
         saveDefaultConfig();
 
-        // 🔥 PLAYERS FILE
-        setupPlayersFile();
-
-        // 🔥 MANAGERS
-        groupManager = new GroupManager(this);
+        // ─── Initialisation des managers ────────────────────────────────────────
+        groupManager      = new GroupManager(this);
         groupManager.ensureDefaultGroupExists();
 
-        economyManager = new EconomyManager(this);
-        economyAPI = new EconomyAPI(economyManager);
+        playerDataManager = new PlayerDataManager(this);
+        tabManager        = new TabManager(this);
 
-        statsManager = new StatsManager(playersConfig);
-        statsAPI = new StatsAPI(statsManager);
+        economyManager    = new EconomyManager(this);
+        economyAPI        = new EconomyAPI(economyManager);
 
-        playerManager = new PlayerManager();
-        levelManager = new LevelManager(playerManager);
+        statsManager      = new StatsManager(playerDataManager.getPlayersConfig());
+        statsAPI          = new StatsAPI(statsManager);
 
-        mobManager   = new MobManager();
-        mobSpawner   = new MobSpawner(mobManager);
-        lootManager  = new LootManager();
-        debugManager = new DebugManager();
-        zoneManager  = new ZoneManager(this, mobSpawner, mobManager, debugManager);
+        playerManager     = new PlayerManager();
+        levelManager      = new LevelManager(playerManager);
 
-        // ─── Chargement depuis les fichiers YAML ───────────────────────────
+        mobManager        = new MobManager();
+        mobSpawner        = new MobSpawner(mobManager);
+        lootManager       = new LootManager();
+        debugManager      = new DebugManager();
+        zoneManager       = new ZoneManager(this, mobSpawner, mobManager, debugManager);
+
+        // ─── Chargement des configs YAML ────────────────────────────────────────
         mobConfig  = new MobConfig(this, mobManager);
         lootConfig = new LootConfig(this, lootManager);
         zoneConfig = new ZoneConfig(this, zoneManager);
 
         mobConfig.load();
         lootConfig.load();
-        // Les zones peuvent référencer des mobs → on charge après
-        zoneConfig.load();
+        zoneConfig.load(); // après mobs car les zones référencent des mobs
 
+        // ─── Nettoyage des mobs vanilla résiduels ───────────────────────────────
+        // Les mobs non-customs (sans metadata "customMob") sont des vestiges du monde
+        // qui ont échappé au filtre onSpawn (spawné avant l'activation du plugin).
+        // On les supprime au prochain tick, une fois les mondes entièrement chargés.
+        Bukkit.getScheduler().runTask(this, () -> {
+            int removed = 0;
+            for (org.bukkit.World world : Bukkit.getWorlds()) {
+                for (org.bukkit.entity.Entity entity : world.getEntities()) {
+                    if (!(entity instanceof Mob)) continue;
+                    if (entity.hasMetadata("customMob")) continue;
+                    entity.remove();
+                    removed++;
+                }
+            }
+            if (removed > 0)
+                getLogger().info("[Armesia] Nettoyage démarrage : " + removed + " mob(s) vanilla supprimé(s).");
+        });
 
+        // ─── Enregistrement des événements et des commandes ─────────────────────
+        registerEvents();
+        registerCommands();
+    }
 
-        PluginManager pluginManager = Bukkit.getPluginManager();
-        pluginManager.registerEvents(new KillListener(this, statsManager, economyManager), this);
-        pluginManager.registerEvents(new PlayersListeners(), this);
-        pluginManager.registerEvents(new BlockListener(), this);
-        pluginManager.registerEvents(new DamageListener(this), this);
-        pluginManager.registerEvents(new MobListener(mobManager, lootManager, zoneManager, debugManager, economyAPI, levelManager), this);
-        pluginManager.registerEvents(new fr.segame.armesia.zones.ZoneListener(zoneManager, debugManager), this);
+    @Override
+    public void onDisable() {
+        playerDataManager.savePlayers();
+    }
 
-        // ─── Commandes existantes ─────────────────────────────────────────
+    // ============================================================================
+    //  Enregistrement des événements
+    // ============================================================================
+
+    private void registerEvents() {
+        PluginManager pm = getServer().getPluginManager();
+        pm.registerEvents(new KillListener(this, statsManager, economyManager), this);
+        pm.registerEvents(new PlayersListeners(), this);
+        pm.registerEvents(new BlockListener(), this);
+        pm.registerEvents(new DamageListener(this), this);
+        pm.registerEvents(new MobListener(mobManager, lootManager, zoneManager, debugManager, economyAPI, levelManager), this);
+        pm.registerEvents(new ZoneListener(zoneManager, debugManager), this);
+    }
+
+    // ============================================================================
+    //  Enregistrement des commandes
+    // ============================================================================
+
+    private void registerCommands() {
         getCommand("heal").setExecutor(new HealCommand());
         getCommand("feed").setExecutor(new FeedCommand());
         getCommand("suicide").setExecutor(new SuicideCommand());
@@ -138,7 +165,6 @@ public final class Main extends JavaPlugin {
         getCommand("pay").setExecutor(new EconomyCommand(this));
         getCommand("level").setExecutor(new LevelCommand(this));
 
-        // ─── Nouvelles commandes mob/loot/zone ────────────────────────────
         MobCommand  mobCmd  = new MobCommand(mobManager, mobConfig, mobSpawner);
         LootCommand lootCmd = new LootCommand(lootManager, lootConfig);
         ZoneCommand zoneCmd = new ZoneCommand(zoneManager, mobManager, zoneConfig, debugManager);
@@ -149,230 +175,59 @@ public final class Main extends JavaPlugin {
         getCommand("loot").setTabCompleter(lootCmd);
         getCommand("zone").setExecutor(zoneCmd);
         getCommand("zone").setTabCompleter(zoneCmd);
-
     }
 
-    @Override
-    public void onDisable() {
-        savePlayers(); // 🔥 sécurité
-    }
+    // ============================================================================
+    //  Getters d'instance
+    // ============================================================================
 
-    public EconomyAPI getEconomyAPI() {
-        return economyAPI;
-    }
+    public static Main          getInstance()        { return instance; }
+    public static GroupManager  getGroupManager()    { return groupManager; }
+    public static StatsManager  getStatsManager()    { return statsManager; }
+    public static EconomyManager getEconomyManager() { return economyManager; }
 
-    public StatsAPI getStatsAPI() {
-        return statsAPI;
-    }
+    public EconomyAPI        getEconomyAPI()         { return economyAPI; }
+    public StatsAPI          getStatsAPI()           { return statsAPI; }
+    public PlayerManager     getPlayerManager()      { return playerManager; }
+    public LevelManager      getLevelManager()       { return levelManager; }
+    public PlayerDataManager getPlayerDataManager()  { return playerDataManager; }
+    public TabManager        getTabManager()         { return tabManager; }
 
-    public static Main getInstance() {
-        return instance;
-    }
-
-    public PlayerManager getPlayerManager() {
-        return playerManager;
-    }
-
-    public LevelManager getLevelManager() {
-        return levelManager;
-    }
-
-    public MobManager getMobManager()   { return mobManager; }
+    public MobManager  getMobManager()  { return mobManager; }
     public LootManager getLootManager() { return lootManager; }
     public ZoneManager getZoneManager() { return zoneManager; }
-    public MobConfig getMobConfig()     { return mobConfig; }
-    public LootConfig getLootConfig()   { return lootConfig; }
-    public ZoneConfig getZoneConfig()   { return zoneConfig; }
+    public MobConfig   getMobConfig()   { return mobConfig; }
+    public LootConfig  getLootConfig()  { return lootConfig; }
+    public ZoneConfig  getZoneConfig()  { return zoneConfig; }
 
-    public static StatsManager getStatsManager() {
-        return statsManager;
-    }
+    // ============================================================================
+    //  Délégués → PlayerDataManager  (rétro-compatibilité avec les appelants)
+    // ============================================================================
 
-    public static EconomyManager getEconomyManager() {
-        return economyManager;
-    }
+    /** Accès au fichier players.yml (utilisé par EconomyManager, LevelManager…) */
+    public FileConfiguration getPlayersConfig() { return playerDataManager.getPlayersConfig(); }
+    public void savePlayers()                   { playerDataManager.savePlayers(); }
 
-    public static GroupManager getGroupManager() {
-        return groupManager;
-    }
+    public static void loadPlayer(Player player)                        { instance.playerDataManager.loadPlayer(player); }
+    public static void savePlayer(Player player)                        { instance.playerDataManager.savePlayer(player); }
+    public static boolean hasGroupPermission(Player player, String perm){ return instance.playerDataManager.hasGroupPermission(player, perm); }
 
-    // ---------------- PLAYERS FILE ----------------
-    private void setupPlayersFile() {
-        playersFile = new File(getDataFolder(), "players.yml");
+    // ============================================================================
+    //  Délégués → TabManager  (rétro-compatibilité avec les appelants)
+    // ============================================================================
 
-        if (!playersFile.exists()) {
-            playersFile.getParentFile().mkdirs();
-            try {
-                playersFile.createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+    public static void   updateTab(Player player)              { instance.tabManager.updateTab(player); }
+    public static void   updateAllTabs()                       { instance.tabManager.updateAllTabs(); }
+    public static String getGroupChatPrefix(String group)      { return instance.tabManager.getGroupChatPrefix(group); }
+    public static String getGroupTabPrefix(String group)       { return instance.tabManager.getGroupTabPrefix(group); }
 
-        playersConfig = YamlConfiguration.loadConfiguration(playersFile);
-    }
-
-    // ---------------- PERMISSIONS ----------------
-    public static boolean hasGroupPermission(Player player, String permission) {
-
-        if (player.isOp()) return true;
-
-        if (player.hasPermission(permission)) return true;
-
-        String group = groups.get(player.getUniqueId());
-        group = groupManager.getValidGroupOrDefault(group);
-
-        List<String> permissions = getInstance().getConfig()
-                .getStringList("groups." + group + ".permissions");
-
-        if (permissions.contains("*")) return true;
-
-        return permissions.contains(permission);
-    }
-
-    // ---------------- LOAD PLAYER ----------------
-    public static void loadPlayer(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        String group = groupManager.getValidGroupOrDefault(
-                getInstance().getConfig().getString("players." + uuid + ".group")
-        );
-
-        String job = getInstance().getConfig()
-                .getString("players." + uuid + ".job", "Citoyen");
-
-        boolean showChatPrefix = getInstance().getConfig()
-                .getBoolean("players." + uuid + ".show-chat-prefix", true);
-
-        boolean showTabPrefix = getInstance().getConfig()
-                .getBoolean("players." + uuid + ".show-tab-prefix", true);
-
-        // 🔥 XP + LEVEL
-        int xp = getInstance().getPlayersConfig()
-                .getInt("players." + uuid + ".xp", 0);
-
-        int level = getInstance().getPlayersConfig()
-                .getInt("players." + uuid + ".level", 1);
-
-        GamePlayer gp = getInstance().getPlayerManager().getPlayer(uuid);
-
-        gp.setXp(xp);
-        gp.setLevel(level);
-
-        chatPrefixEnabled.put(uuid, showChatPrefix);
-        tabPrefixEnabled.put(uuid, showTabPrefix);
-
-        groups.put(uuid, group);
-        jobs.put(uuid, job);
-    }
-
-    // ---------------- SAVE PLAYER ----------------
-    public static void savePlayer(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        getInstance().getConfig().set("players." + uuid + ".group", groups.get(uuid));
-        getInstance().getConfig().set("players." + uuid + ".job", jobs.get(uuid));
-        getInstance().getConfig().set("players." + uuid + ".show-chat-prefix", chatPrefixEnabled.get(uuid));
-        getInstance().getConfig().set("players." + uuid + ".show-tab-prefix", tabPrefixEnabled.get(uuid));
-
-        getInstance().saveConfig();
-    }
-
-    // ---------------- PREFIX ----------------
-    public static String getGroupChatPrefix(String group) {
-        return getInstance().getConfig().getString("groups." + group + ".chat-prefix", "");
-    }
-
-    public static String getGroupTabPrefix(String group) {
-        return getInstance().getConfig().getString("groups." + group + ".tab-prefix", "");
-    }
-
-    // ---------------- UPDATE TAB ----------------
-    public static void updateTab(Player player) {
-
-        String group = groups.get(player.getUniqueId());
-        group = groupManager.getValidGroupOrDefault(group);
-
-        boolean showTabPrefix = tabPrefixEnabled.getOrDefault(player.getUniqueId(), true);
-
-        String prefix = "§7";
-        if (showTabPrefix) {
-            prefix = getGroupTabPrefix(group);
-        }
-
-        // Récupérer le vrai niveau du joueur via GamePlayer
-        GamePlayer gp = getInstance().getPlayerManager().getPlayer(player.getUniqueId());
-        int level = gp != null ? gp.getLevel() : 1;
-
-        // Affichage dans le TAB
-        player.setPlayerListName("§7[" + level + "✫] " + prefix + player.getName());
-
-        // ---------- TRI PAR NIVEAU VIA TEAMS DE SCOREBOARD ----------
-        // On met à jour l'entrée de CE joueur dans le scoreboard de CHAQUE joueur en ligne.
-        // Chaque joueur a son propre scoreboard (créé par Armesia-Scoreboard),
-        // donc on doit propager le changement sur tous.
-        String teamName = String.format("lvl_%04d", 9999 - level);
-        String nametagPrefix = "§7[" + level + "✫] " + prefix;
-        ChatColor nameColor = getLastChatColor(nametagPrefix);
-
-        for (Player online : Bukkit.getOnlinePlayers()) {
-            Scoreboard board = online.getScoreboard();
-
-            // Retirer ce joueur de toute autre team lvl_ sur ce scoreboard
-            for (Team t : board.getTeams()) {
-                if (t.getName().startsWith("lvl_") && t.hasEntry(player.getName())) {
-                    t.removeEntry(player.getName());
-                }
-            }
-
-            // Créer la team si elle n'existe pas encore, puis y ajouter le joueur
-            Team team = board.getTeam(teamName);
-            if (team == null) {
-                team = board.registerNewTeam(teamName);
-            }
-            // Appliquer le préfixe du nametag (au-dessus de la tête) identique au TAB
-            team.setPrefix(nametagPrefix);
-            // Forcer la couleur du nom du joueur pour qu'elle corresponde au TAB
-            team.setColor(nameColor);
-            team.addEntry(player.getName());
-        }
-    }
-
-    public static void updateAllTabs() {
-        // Met à jour le TAB de tous les joueurs actuellement connectés
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            updateTab(player);
-        }
-    }
-
-    // ── Callback enregistré par Armesia-Scoreboard au démarrage ──────────────
-    // Main n'importe rien d'Armesia-Scoreboard : pas de dépendance circulaire.
-    private static Consumer<Player> scoreboardUpdateCallback = null;
-
+    /** Enregistré par Armesia-Scoreboard au démarrage (pas de dépendance inverse). */
     public static void registerScoreboardUpdateCallback(Consumer<Player> callback) {
-        scoreboardUpdateCallback = callback;
+        TabManager.registerScoreboardUpdateCallback(callback);
     }
 
-    // ── Déclenche la mise à jour immédiate de la sidebar d'un joueur ──────────
     public static void updatePlayerScoreboard(UUID uuid) {
-        if (scoreboardUpdateCallback == null) return;
-        Player player = Bukkit.getPlayer(uuid);
-        if (player == null) return;
-        scoreboardUpdateCallback.accept(player);
-    }
-
-    // ── Extraire la dernière couleur active dans une chaîne §X ─────────────────
-    // Utilisé pour que team.setColor() corresponde à la couleur du nom en TAB.
-    private static ChatColor getLastChatColor(String text) {
-        for (int i = text.length() - 2; i >= 0; i--) {
-            if (text.charAt(i) == '§') {
-                ChatColor c = ChatColor.getByChar(text.charAt(i + 1));
-                if (c != null && c.isColor()) {
-                    return c;
-                }
-            }
-        }
-        return ChatColor.WHITE;
+        TabManager.updatePlayerScoreboard(uuid);
     }
 
 }

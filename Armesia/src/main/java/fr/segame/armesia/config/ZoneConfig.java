@@ -74,6 +74,16 @@ public class ZoneConfig {
             SpawnCondition condition = SpawnCondition.fromString(
                     config.getString(path + ".spawn-condition", "ALWAYS"));
 
+            double spawnBoostRatio1       = config.getDouble(path + ".spawn-boost-ratio1",       0.25);
+            double spawnBoostRatio2       = config.getDouble(path + ".spawn-boost-ratio2",       0.50);
+            double spawnBoostRatio3       = config.getDouble(path + ".spawn-boost-ratio3",       0.75);
+            double spawnBoostMultiplier1  = config.getDouble(path + ".spawn-boost-multiplier1",  3.0);
+            double spawnBoostMultiplier2  = config.getDouble(path + ".spawn-boost-multiplier2",  2.0);
+            double spawnBoostMultiplier3  = config.getDouble(path + ".spawn-boost-multiplier3",  1.5);
+            int    spawnBoostCount1       = config.getInt(   path + ".spawn-boost-count1",       3);
+            int    spawnBoostCount2       = config.getInt(   path + ".spawn-boost-count2",       2);
+            int    spawnBoostCount3       = config.getInt(   path + ".spawn-boost-count3",       1);
+
             double despawn              = config.getDouble(path + ".despawn-distance", 150);
             int    despawnCheckInterval = config.getInt(path + ".despawn-check-interval", 5);
             double despawnClose         = config.getDouble(path + ".despawn-chance-close",  0.0);
@@ -112,6 +122,15 @@ public class ZoneConfig {
             zone.setSpawnInterval(spawnInterval);
             zone.setSpawnChance(spawnChance);
             zone.setSpawnCondition(condition);
+            zone.setSpawnBoostRatio1(spawnBoostRatio1);
+            zone.setSpawnBoostRatio2(spawnBoostRatio2);
+            zone.setSpawnBoostRatio3(spawnBoostRatio3);
+            zone.setSpawnBoostMultiplier1(spawnBoostMultiplier1);
+            zone.setSpawnBoostMultiplier2(spawnBoostMultiplier2);
+            zone.setSpawnBoostMultiplier3(spawnBoostMultiplier3);
+            zone.setSpawnBoostCount1(spawnBoostCount1);
+            zone.setSpawnBoostCount2(spawnBoostCount2);
+            zone.setSpawnBoostCount3(spawnBoostCount3);
             zone.setDespawnDistance(despawn);
             zone.setDespawnCheckInterval(despawnCheckInterval);
             zone.setDespawnChanceClose(despawnClose);
@@ -165,6 +184,16 @@ public class ZoneConfig {
         config.set(path + ".spawn-interval",    zone.getSpawnInterval());
         config.set(path + ".spawn-chance",      zone.getSpawnChance());
         config.set(path + ".spawn-condition",   zone.getSpawnCondition().name());
+        // ── Boost spawn ──
+        config.set(path + ".spawn-boost-ratio1",      zone.getSpawnBoostRatio1());
+        config.set(path + ".spawn-boost-ratio2",      zone.getSpawnBoostRatio2());
+        config.set(path + ".spawn-boost-ratio3",      zone.getSpawnBoostRatio3());
+        config.set(path + ".spawn-boost-multiplier1", zone.getSpawnBoostMultiplier1());
+        config.set(path + ".spawn-boost-multiplier2", zone.getSpawnBoostMultiplier2());
+        config.set(path + ".spawn-boost-multiplier3", zone.getSpawnBoostMultiplier3());
+        config.set(path + ".spawn-boost-count1",      zone.getSpawnBoostCount1());
+        config.set(path + ".spawn-boost-count2",      zone.getSpawnBoostCount2());
+        config.set(path + ".spawn-boost-count3",      zone.getSpawnBoostCount3());
         // ── Despawn ──
         config.set(path + ".despawn-distance",        zone.getDespawnDistance());
         config.set(path + ".despawn-check-interval",  zone.getDespawnCheckInterval());

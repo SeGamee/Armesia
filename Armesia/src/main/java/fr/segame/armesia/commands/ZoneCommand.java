@@ -106,6 +106,20 @@ public class ZoneCommand implements CommandExecutor, TabCompleter {
         s.sendMessage("  §7Intervalle      : §f" + z.getSpawnInterval() + "s");
         s.sendMessage("  §7Multiplicateur  : §f" + String.format("%.0f%%", z.getSpawnChance() * 100));
         s.sendMessage("  §7Condition       : §f" + z.getSpawnCondition());
+        s.sendMessage("  §7─── Boost spawn (par palier de remplissage) ─────────");
+        int t = z.getTargetMax();
+        s.sendMessage("  §7Seuils (ratio×target) : §f<" + pct(z.getSpawnBoostRatio1()) + " §8(~" + (int)(z.getSpawnBoostRatio1()*t) + " mobs)"
+                + " §7| §f" + pct(z.getSpawnBoostRatio1()) + "-" + pct(z.getSpawnBoostRatio2()) + " §8(~" + (int)(z.getSpawnBoostRatio2()*t) + " mobs)"
+                + " §7| §f" + pct(z.getSpawnBoostRatio2()) + "-" + pct(z.getSpawnBoostRatio3()) + " §8(~" + (int)(z.getSpawnBoostRatio3()*t) + " mobs)"
+                + " §7| §7au-delà");
+        s.sendMessage("  §7Multiplicateurs : §f×" + z.getSpawnBoostMultiplier1()
+                + " §7| §f×" + z.getSpawnBoostMultiplier2()
+                + " §7| §f×" + z.getSpawnBoostMultiplier3()
+                + " §7| §f×1 §8(normal)");
+        s.sendMessage("  §7Burst counts    : §f" + z.getSpawnBoostCount1()
+                + " §7| §f" + z.getSpawnBoostCount2()
+                + " §7| §f" + z.getSpawnBoostCount3()
+                + " §7| §f1 §8(normal)");
         s.sendMessage("  §7─── Despawn ─────────────────────────────");
         s.sendMessage("  §7Distance seuil  : §f" + z.getDespawnDistance() + " blocs");
         s.sendMessage("  §7Vérif. toutes   : §f" + z.getDespawnCheckInterval() + "s");
@@ -189,6 +203,10 @@ public class ZoneCommand implements CommandExecutor, TabCompleter {
                 + "  §7Target/joueur : §f" + z.getTargetMin() + "-" + z.getTargetMax()
                 + "  §7Interval : §f" + z.getSpawnInterval() + "s"
                 + "  §7Chance×: §f" + String.format("%.0f%%", z.getSpawnChance() * 100));
+        p.sendMessage(PREFIX + "§7Boost spawn — seuils ×" + z.getTargetMax() + " : §f<"
+                + pct(z.getSpawnBoostRatio1()) + " §7(×" + z.getSpawnBoostMultiplier1() + " burst" + z.getSpawnBoostCount1() + ")"
+                + " §7| §f<" + pct(z.getSpawnBoostRatio2()) + " §7(×" + z.getSpawnBoostMultiplier2() + " burst" + z.getSpawnBoostCount2() + ")"
+                + " §7| §f<" + pct(z.getSpawnBoostRatio3()) + " §7(×" + z.getSpawnBoostMultiplier3() + " burst" + z.getSpawnBoostCount3() + ")");
         p.sendMessage(PREFIX + "§7Condition : §f" + z.getSpawnCondition());
         p.sendMessage(PREFIX + "§7Despawn : §f" + z.getDespawnDistance() + " blocs"
                 + "  §7Vérif: §f" + z.getDespawnCheckInterval() + "s");
@@ -343,6 +361,16 @@ public class ZoneCommand implements CommandExecutor, TabCompleter {
                 case "spawninterval"  -> z.setSpawnInterval(Integer.parseInt(val));
                 case "spawnchance"    -> z.setSpawnChance(Double.parseDouble(val));
                 case "condition"      -> z.setSpawnCondition(SpawnCondition.fromString(val));
+                // ── Boost spawn ──
+                case "spawnboostratio1"  -> z.setSpawnBoostRatio1(Double.parseDouble(val));
+                case "spawnboostratio2"  -> z.setSpawnBoostRatio2(Double.parseDouble(val));
+                case "spawnboostratio3"  -> z.setSpawnBoostRatio3(Double.parseDouble(val));
+                case "spawnboostmul1"    -> z.setSpawnBoostMultiplier1(Double.parseDouble(val));
+                case "spawnboostmul2"    -> z.setSpawnBoostMultiplier2(Double.parseDouble(val));
+                case "spawnboostmul3"    -> z.setSpawnBoostMultiplier3(Double.parseDouble(val));
+                case "spawnboostcount1"  -> z.setSpawnBoostCount1(Integer.parseInt(val));
+                case "spawnboostcount2"  -> z.setSpawnBoostCount2(Integer.parseInt(val));
+                case "spawnboostcount3"  -> z.setSpawnBoostCount3(Integer.parseInt(val));
                 // ── Despawn ──
                 case "despawn"        -> z.setDespawnDistance(Double.parseDouble(val));
                 case "despawninterval"-> z.setDespawnCheckInterval(Integer.parseInt(val));
@@ -407,6 +435,10 @@ public class ZoneCommand implements CommandExecutor, TabCompleter {
                         // spawn
                         "spawnmin", "spawnmax", "targetmin", "targetmax",
                         "spawninterval", "spawnchance", "condition",
+                        // boost spawn
+                        "spawnboostratio1", "spawnboostratio2", "spawnboostratio3",
+                        "spawnboostmul1", "spawnboostmul2", "spawnboostmul3",
+                        "spawnboostcount1", "spawnboostcount2", "spawnboostcount3",
                         // despawn
                         "despawn", "despawninterval",
                         "despawnclose", "despawnmid", "despawnfar", "despawnouter",
@@ -437,6 +469,8 @@ public class ZoneCommand implements CommandExecutor, TabCompleter {
         s.sendMessage("  §7  Général   : max  priority  inherit  override");
         s.sendMessage("  §7  Spawn     : spawnmin  spawnmax  targetmin  targetmax");
         s.sendMessage("  §7             spawninterval§8(s)  spawnchance§8(0-1)  condition§8(ALWAYS/DAY/NIGHT)");
+        s.sendMessage("  §7  Boost spawn: spawnboostratio1/2/3§8(seuil×target)");
+        s.sendMessage("  §7             spawnboostmul1/2/3§8(×chance)  spawnboostcount1/2/3§8(mobs/burst)");
         s.sendMessage("  §7  Despawn   : despawn§8(blocs)  despawninterval§8(s)");
         s.sendMessage("  §7             despawnclose  despawnmid  despawnfar  despawnouter§8(0-1, chances)");
         s.sendMessage("  §7             despawnratio1  despawnratio2  despawnratio3§8(0-2, seuils×distance)");

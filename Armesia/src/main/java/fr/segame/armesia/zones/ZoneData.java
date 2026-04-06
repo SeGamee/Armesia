@@ -45,6 +45,31 @@ public class ZoneData {
     /** Multiplicateur appliqué à la probabilité de spawn calculée (0.0 – 1.0) */
     private double spawnChance = 1.0;
 
+    // ── Paliers de boost spawn ────────────────────────────────────────────────
+    //  Quand nearby < ratioN × target, la chance est multipliée et un burst est déclenché.
+    //  Tier 1 = moins de mobs (spawn le plus agressif), tier 3 = presque au cap.
+
+    /** Seuil tier 1 : nearby < ratio1 × target  (défaut 0.25 = < 25% du target) */
+    private double spawnBoostRatio1 = 0.25;
+    /** Seuil tier 2 : nearby < ratio2 × target  (défaut 0.50 = < 50% du target) */
+    private double spawnBoostRatio2 = 0.50;
+    /** Seuil tier 3 : nearby < ratio3 × target  (défaut 0.75 = < 75% du target) */
+    private double spawnBoostRatio3 = 0.75;
+
+    /** Multiplicateur de chance pour le tier 1 (appliqué à spawnChance) */
+    private double spawnBoostMultiplier1 = 3.0;
+    /** Multiplicateur de chance pour le tier 2 */
+    private double spawnBoostMultiplier2 = 2.0;
+    /** Multiplicateur de chance pour le tier 3 */
+    private double spawnBoostMultiplier3 = 1.5;
+
+    /** Nombre de mobs spawnés en une seule vague pour le tier 1 */
+    private int spawnBoostCount1 = 3;
+    /** Nombre de mobs spawnés en une seule vague pour le tier 2 */
+    private int spawnBoostCount2 = 2;
+    /** Nombre de mobs spawnés en une seule vague pour le tier 3 (1 = pas de burst) */
+    private int spawnBoostCount3 = 1;
+
     // ── Paliers de despawn — probabilités ────────────────────────────────────
     /** dist < ratio1 × despawnDistance  → probabilité de despawn */
     private double despawnChanceClose = 0.0;
@@ -130,6 +155,35 @@ public class ZoneData {
 
     public double getSpawnChance() { return spawnChance; }
     public void setSpawnChance(double v) { this.spawnChance = Math.max(0.0, Math.min(1.0, v)); }
+
+    // ── Boost spawn ───────────────────────────────────────────────────────────
+
+    public double getSpawnBoostRatio1() { return spawnBoostRatio1; }
+    public void setSpawnBoostRatio1(double v) { this.spawnBoostRatio1 = Math.max(0.0, v); }
+
+    public double getSpawnBoostRatio2() { return spawnBoostRatio2; }
+    public void setSpawnBoostRatio2(double v) { this.spawnBoostRatio2 = Math.max(0.0, v); }
+
+    public double getSpawnBoostRatio3() { return spawnBoostRatio3; }
+    public void setSpawnBoostRatio3(double v) { this.spawnBoostRatio3 = Math.max(0.0, v); }
+
+    public double getSpawnBoostMultiplier1() { return spawnBoostMultiplier1; }
+    public void setSpawnBoostMultiplier1(double v) { this.spawnBoostMultiplier1 = Math.max(1.0, v); }
+
+    public double getSpawnBoostMultiplier2() { return spawnBoostMultiplier2; }
+    public void setSpawnBoostMultiplier2(double v) { this.spawnBoostMultiplier2 = Math.max(1.0, v); }
+
+    public double getSpawnBoostMultiplier3() { return spawnBoostMultiplier3; }
+    public void setSpawnBoostMultiplier3(double v) { this.spawnBoostMultiplier3 = Math.max(1.0, v); }
+
+    public int getSpawnBoostCount1() { return spawnBoostCount1; }
+    public void setSpawnBoostCount1(int v) { this.spawnBoostCount1 = Math.max(1, v); }
+
+    public int getSpawnBoostCount2() { return spawnBoostCount2; }
+    public void setSpawnBoostCount2(int v) { this.spawnBoostCount2 = Math.max(1, v); }
+
+    public int getSpawnBoostCount3() { return spawnBoostCount3; }
+    public void setSpawnBoostCount3(int v) { this.spawnBoostCount3 = Math.max(1, v); }
 
     public double getDespawnChanceClose() { return despawnChanceClose; }
     public void setDespawnChanceClose(double v) { this.despawnChanceClose = v; }
