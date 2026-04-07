@@ -19,6 +19,7 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 
 import java.util.Random;
 
+
 public class MobListener implements Listener {
 
     private final MobManager mobManager;
@@ -70,7 +71,7 @@ public class MobListener implements Listener {
         int money = randBetween(data.getMoneyMin(), data.getMoneyMax());
         int xp    = randBetween(data.getXpMin(),    data.getXpMax());
 
-        if (money > 0) economyAPI.addMoney(player.getUniqueId(), money);
+        if (money > 0 && economyAPI != null) economyAPI.addMoney(player.getUniqueId(), money);
         if (xp > 0)    LevelAPI.addXP(player.getUniqueId(), xp);
 
         String mobName = ChatColor.translateAlternateColorCodes('&', data.getName());

@@ -2,6 +2,112 @@ groups: {}
 players: {}
 jobs:
   - "Citoyen"
+
+# ── Vitesse ───────────────────────────────────────────────────────────────────
+speed:
+  max-walk: 10
+  max-fly: 10
+  default-walk: 2       # équivaut à 0.2f Bukkit (vitesse de marche normale)
+  default-fly: 1        # équivaut à 0.1f Bukkit (vitesse de vol normale)
+  reset-on-login: true
+  messages:
+    set:        "§aVitesse {type} définie à §f{value}§a."
+    reset:      "§aVotre vitesse a été réinitialisée."
+    set-other:  "§aVitesse {type} de §f{player} §adéfinie à §f{value}§a."
+    reset-other: "§aVitesse de §f{player} §aréinitialisée."
+
+
+# ── Vanish ────────────────────────────────────────────────────────────────────
+vanish:
+  silent-join:      true
+  silent-quit:      true
+  reset-on-login:   false
+  messages:
+    on:        "§aVous êtes maintenant invisible."
+    off:       "§aVous êtes de nouveau visible."
+    on-other:  "§a{player} §aest maintenant invisible."
+    off-other: "§a{player} §aest de nouveau visible."
+
+# ── Réparation ────────────────────────────────────────────────────────────────
+repair:
+  xp-cost: 0
+  messages:
+    success:      "§aItem réparé avec succès."
+    success-all:  "§aTous vos items ont été réparés (§f{count}§a)."
+    no-item:      "§cVous n'avez aucun item en main."
+    not-damageable: "§cCet item ne peut pas être réparé."
+    not-enough-xp: "§cNiveaux insuffisants (requis : §f{cost}§c)."
+
+# ── Homes ─────────────────────────────────────────────────────────────────────
+homes:
+  default-limit: 1
+  teleport-delay: 3
+  move-threshold: 0.5
+  limits:
+    armesia.homes.2:         2
+    armesia.homes.5:         5
+    armesia.homes.10:        10
+    armesia.homes.unlimited: -1
+  messages:
+    set:          "§aHome §e{name} §adéfini."
+    updated:      "§7Home §e{name} §7mis à jour."
+    deleted:      "§aHome §e{name} §asupprimé."
+    teleporting:  "§aTéléportation vers §e{name} §adans §f{delay}§as... Ne bougez pas !"
+    teleported:   "§aTéléporté vers §e{name}§a."
+    not-found:    "§cAucun home nommé §e{name}§c."
+    limit-reached: "§cLimite atteinte (§f{limit} §chome(s) max)."
+    move-cancel:  "§cTéléportation annulée, vous avez bougé."
+    empty:        "§7Aucun home. Utilisez §f/sethome [nom]§7."
+    world-not-found: "§cLe monde de ce home n'existe plus."
+
+# ── TPA ───────────────────────────────────────────────────────────────────────
+tpa:
+  timeout: 60
+  preparation-delay: 3
+  teleport-delay: 5
+  send-cooldown: 5
+  move-threshold: 0.5
+  messages:
+    sent-to:              "§aDemande envoyée à §f{player}§a (expire dans §f{timeout}§as)."
+    sent-here:            "§aDemande de rappel envoyée à §f{player}§a (expire dans §f{timeout}§as)."
+    received-tpa:         "§f{player} §aveut se tp chez vous — §f/tpyes §aou §f/tpdeny §a(§f{timeout}§as)."
+    received-tpahere:     "§f{player} §aveut que vous le rejoigniez — §f/tpyes §aou §f/tpdeny §a(§f{timeout}§as)."
+    accepted:             "§aDemande acceptée."
+    denied:               "§cDemande refusée."
+    denied-by:            "§f{player} §ca refusé votre demande."
+    accepted-by:          "§f{player} §aa accepté, téléportation en cours..."
+    expired:              "§cVotre demande vers §f{player} §ca expiré."
+    expired-incoming:     "§cLa demande de §f{player} §ca expiré."
+    no-request:           "§cVous n'avez aucune demande en attente."
+    no-pending:           "§cVous n'avez aucune demande en cours à annuler."
+    already-pending:      "§cVous avez déjà une demande en cours vers §f{player}§c."
+    preparation:          "§aTéléportation vers §f{player} §adans §f{delay}§as — préparez-vous !"
+    teleporting:          "§aNe bougez plus ! Téléportation dans §f{delay}§as."
+    move-cancel:          "§cTéléportation annulée, vous avez bougé."
+    cancelled:            "§cVotre demande a été annulée."
+    cancelled-by-sender:  "§f{player} §ca annulé sa demande de téléportation."
+    cooldown:             "§cVeuillez attendre §f{remaining}§cs avant une nouvelle demande."
+
+# ── Messages privés ───────────────────────────────────────────────────────────
+private-messages:
+  format-send:    "§7[§fVous §7→ §f{to}§7] §f{message}"
+  format-receive: "§7[§f{from} §7→ §fVous§7] §f{message}"
+  format-spy:     "§8[SPY] §7{from} §8→ §7{to}§8: §f{message}"
+  no-reply:       "§cVous n'avez personne à qui répondre."
+  spy-on:         "§aSpy mode activé."
+  spy-off:        "§cSpy mode désactivé."
+
+# ── /near ─────────────────────────────────────────────────────────────────────
+near:
+  default-radius: 100
+  max-radius: 500
+
+# ── Messages généraux ─────────────────────────────────────────────────────────
+general:
+  no-permission:    "§cVous n'avez pas la permission."
+  player-only:      "§cVous devez être un joueur."
+  player-not-found: "§cCe joueur n'est pas connecté."
+
 antifarm:
   enabled: true
   cooldown: 60

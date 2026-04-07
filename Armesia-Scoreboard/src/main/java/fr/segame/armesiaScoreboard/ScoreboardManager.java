@@ -7,7 +7,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.Team;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,13 +34,14 @@ public class ScoreboardManager {
         scoreboards.put(player.getUniqueId(), board);
         player.setScoreboard(board);
 
-        // Injecter les teams de tri pour tous les joueurs déjà connectés
-        for (Player online : Bukkit.getOnlinePlayers()) {
-            injectLevelTeam(board, online);
-        }
-
         // Remplir la sidebar immédiatement
         updateScores(player, board);
+
+        // Re-appliquer les préfixes/couleurs de groupe sur le nouveau scoreboard.
+        // updateAllTabs() boucle sur tous les viewers en ligne et écrit la team
+        // de chaque joueur sur le scoreboard actif du viewer → ce scoreboard (board)
+        // reçoit automatiquement toutes les teams avec prefix/suffix corrects.
+        Main.updateAllTabs();
     }
 
     // ── Appelé toutes les minutes (refresh périodique) ────────────────────────
@@ -87,39 +87,25 @@ public class ScoreboardManager {
         int kills  = core.getStatsAPI().getKills(uuid);
         int deaths = core.getStatsAPI().getDeaths(uuid);
         int streak = core.getStatsAPI().getKillstreak(uuid);
+        String ratio = core.getStatsAPI().getRatio(uuid);
 
         // 📈 Level
         int level  = LevelAPI.getLevel(uuid);
         int xp     = LevelAPI.getXP(uuid);
         String xpBar = LevelAPI.getXPBar(uuid, 10);
 
-        obj.getScore("§7 ").setScore(10);
+        obj.getScore("§4").setScore(10);
         obj.getScore("Niveau: §7%d✫".formatted(level)).setScore(9);
         obj.getScore("§b%d %s §e%d".formatted(xp, xpBar, level * 1000)).setScore(8);
-        obj.getScore("§aMoney: §f"  + moneyFormatted).setScore(7);
-        obj.getScore("§bTokens: §f" + tokensFormatted).setScore(6);
-        obj.getScore("§8 ").setScore(5);
-        obj.getScore("§cKills: §f"  + kills).setScore(4);
-        obj.getScore("§7Morts: §f"  + deaths).setScore(3);
-        obj.getScore("§eStreak: §f" + streak).setScore(2);
-        obj.getScore("§0 ").setScore(1);
+        obj.getScore("§3").setScore(7);
+        obj.getScore("K/D: §a%d§7/§a%d".formatted(kills, deaths)).setScore(6);
+        obj.getScore("KS/Ratio: §a%d§7/§a%s".formatted(streak, ratio)).setScore(5);
+        obj.getScore("§2").setScore(4);
+        obj.getScore("Money: §6"  + moneyFormatted).setScore(3);
+        obj.getScore("Tokens: §b" + tokensFormatted).setScore(2);
+        obj.getScore("§1").setScore(1);
     }
 
-    // ── Injecte la team de tri lvl_ d'un joueur sur un scoreboard donné ──────
-    public void injectLevelTeam(Scoreboard board, Player target) {
-        int level = LevelAPI.getLevel(target.getUniqueId());
-        String teamName = String.format("lvl_%04d", 9999 - level);
-
-        for (Team t : board.getTeams()) {
-            if (t.getName().startsWith("lvl_") && t.hasEntry(target.getName())) {
-                t.removeEntry(target.getName());
-            }
-        }
-
-        Team team = board.getTeam(teamName);
-        if (team == null) team = board.registerNewTeam(teamName);
-        team.addEntry(target.getName());
-    }
 
     public Scoreboard getScoreboard(UUID uuid) {
         return scoreboards.get(uuid);

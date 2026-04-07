@@ -38,7 +38,7 @@ public class EconomyCommand implements CommandExecutor {
 
             // /money <player>
             if (args.length == 1) {
-                if (!sender.hasPermission("armesia.money.admin")) {
+                if (!Main.checkPerm(sender, "armesia.money.admin")) {
                     sender.sendMessage("§cPas la permission.");
                     return true;
                 }
@@ -61,7 +61,7 @@ public class EconomyCommand implements CommandExecutor {
                 return true;
             }
 
-            if (!sender.hasPermission("armesia.money.admin")) {
+            if (!Main.checkPerm(sender, "armesia.money.admin")) {
                 sender.sendMessage("§cPas la permission.");
                 return true;
             }
@@ -133,7 +133,7 @@ public class EconomyCommand implements CommandExecutor {
 
             // /tokens <player>
             if (args.length == 1) {
-                if (!sender.hasPermission("armesia.tokens.admin")) {
+                if (!Main.checkPerm(sender, "armesia.tokens.admin")) {
                     sender.sendMessage("§cPas la permission.");
                     return true;
                 }
@@ -156,7 +156,7 @@ public class EconomyCommand implements CommandExecutor {
                 return true;
             }
 
-            if (!sender.hasPermission("armesia.tokens.admin")) {
+            if (!Main.checkPerm(sender, "armesia.tokens.admin")) {
                 sender.sendMessage("§cPas la permission.");
                 return true;
             }

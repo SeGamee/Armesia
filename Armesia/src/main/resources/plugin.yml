@@ -4,63 +4,237 @@ main: fr.segame.armesia.Main
 api-version: '1.20'
 author: "SeGame"
 softdepend: [Armesia-Level]
+# ─────────────────────────────────────────────────────────────────────────────
+# Les vérifications de permission sont entièrement gérées dans les executors
+# via Main.hasGroupPermission / Main.checkPerm — ne PAS remettre de champ
+# `permission:` ici, cela court-circuiterait le système de groupes.
+# ─────────────────────────────────────────────────────────────────────────────
 commands:
   heal:
     description: "Se soigner"
-    permission: "armesia.heal"
-    permission-message: "§cVous n'avez pas la permission."
   feed:
     description: "Se rassasier"
-    permission: "armesia.feed"
-    permission-message: "§cVous n'avez pas la permission."
   suicide:
     description: "Se suicider"
-    permission: "armesia.suicide"
-    permission-message: "§cVous n'avez pas la permission."
   kill:
     description: "Tuer un joueur"
-    permission: "armesia.kill"
-    permission-message: "§cVous n'avez pas la permission."
   cleareffect:
     description: "Supprimer les effets de potion actifs"
-    permission: "armesia.cleareffect"
-    permission-message: "§cVous n'avez pas la permission."
-    aliases:
-      - "ce"
+    aliases: [ce]
   broadcast:
     description: "Envoyer un message à tous les joueurs connectés"
-    permission: "armesia.broadcast"
-    permission-message: "§cVous n'avez pas la permission."
-    aliases:
-      - "bc"
+    aliases: [bc]
   group:
     description: "Changer de groupe"
-    permission: "armesia.group"
-    permission-message: "§cVous n'avez pas la permission."
   job:
     description: "Changer de job"
-    permission: "armesia.job"
-    permission-message: "§cVous n'avez pas la permission."
   reloadconfig:
     description: "Recharger la configuration"
-    permission: "armesia.reloadconfig"
-    permission-message: "§cVous n'avez pas la permission."
   money:
     description: "Voir ou gérer l'argent"
-    permission: "armesia.money"
-    permission-message: "§cVous n'avez pas la permission."
   tokens:
     description: "Voir ou gérer les tokens"
-    permission: "armesia.tokens"
-    permission-message: "§cVous n'avez pas la permission."
   pay:
     description: "Donner de l'argent à un joueur"
-    permission: "armesia.pay"
-    permission-message: "§cVous n'avez pas la permission."
+  stats:
+    description: "Consulter les statistiques d'un joueur"
+    aliases: [ks]
+  statsadmin:
+    description: "Gérer les statistiques d'un joueur"
+  near:
+    description: "Voir les joueurs proches"
+  baltop:
+    description: "Classement des joueurs les plus riches"
+    usage: "/baltop [page]"
+  invsee:
+    description: "Voir l'inventaire d'un joueur"
+    usage: "/invsee <joueur>"
+  ping:
+    description: "Voir le ping d'un joueur"
+    usage: "/ping [joueur]"
+  god:
+    description: "Activer/désactiver l'invincibilité"
+    usage: "/god [joueur]"
+  clearinventory:
+    description: "Vider l'inventaire d'un joueur"
+    usage: "/clearinventory [joueur]"
+    aliases: [ci, clearinv]
+  item:
+    description: "Modifier l'item en main"
+    usage: "/item <sous-commande>"
+  help:
+    description: "Afficher l'aide"
+    usage: "/help [page]"
+  speed:
+    description: "Modifier la vitesse"
+    usage: "/speed [walk|fly] <1-10> [joueur]"
+  kit:
+    description: "Gérer et réclamer des kits"
+    usage: "/kit [nom|create|delete|give|resetcd]"
+  vanish:
+    description: "Activer/désactiver le mode invisible"
+    usage: "/vanish [joueur]"
+  repair:
+    description: "Réparer l'item en main"
+  repairall:
+    description: "Réparer tous les items de l'inventaire"
+  msg:
+    description: "Envoyer un message privé"
+    usage: "/msg <joueur> <message>"
+    aliases: [m]
+  r:
+    description: "Répondre au dernier message privé"
+    usage: "/r <message>"
+  enderchest:
+    description: "Ouvrir son enderchest"
+    usage: "/ec [joueur]"
+    aliases: [ec]
+  home:
+    description: "Se téléporter à un home"
+    usage: "/home [nom]"
+  sethome:
+    description: "Définir un home"
+    usage: "/sethome [nom]"
+  delhome:
+    description: "Supprimer un home"
+    usage: "/delhome [nom]"
+  homes:
+    description: "Lister ses homes"
+  tp:
+    description: "Téléporter un joueur"
+    usage: "/tp <joueur> | /tp <x> <y> <z> | /tp <j1> <j2>"
+  tphere:
+    description: "Téléporter un joueur vers soi"
+    usage: "/tphere <joueur>"
+  tpall:
+    description: "Téléporter tous les joueurs vers soi"
+  tpa:
+    description: "Demander à se téléporter chez un joueur"
+    usage: "/tpa <joueur>"
+  tpahere:
+    description: "Demander à un joueur de venir chez vous"
+    usage: "/tpahere <joueur>"
+  tpyes:
+    description: "Accepter une demande de téléportation"
+    aliases: [tpaccept]
+  tpdeny:
+    description: "Refuser une demande de téléportation"
+  tpacancel:
+    description: "Annuler sa propre demande de téléportation"
 permissions:
   armesia.heal:
+    default: op
+  armesia.heal.others:
+    default: op
+  armesia.feed:
+    default: op
+  armesia.feed.others:
     default: op
   armesia.suicide:
     default: true
   armesia.kill:
     default: op
+  armesia.cleareffect:
+    default: op
+  armesia.broadcast:
+    default: op
+  armesia.group:
+    default: op
+  armesia.reloadconfig:
+    default: op
+  armesia.money:
+    default: false
+  armesia.money.admin:
+    default: op
+  armesia.tokens:
+    default: false
+  armesia.pay:
+    default: false
+  armesia.stats:
+    default: false
+  armesia.statsadmin:
+    default: op
+  armesia.near:
+    default: false
+    description: "Voir les joueurs dans un rayon de 100 blocs"
+  armesia.near.200:
+    default: false
+  armesia.near.300:
+    default: false
+  armesia.near.400:
+    default: false
+  armesia.near.500:
+    default: false
+  armesia.baltop:
+    default: false
+  armesia.invsee:
+    default: op
+  armesia.invsee.take:
+    default: op
+  armesia.ping:
+    default: false
+  armesia.ping.others:
+    default: op
+  armesia.god:
+    default: op
+  armesia.god.others:
+    default: op
+  armesia.clearinventory:
+    default: op
+  armesia.item:
+    default: op
+  armesia.help:
+    default: true
+  armesia.speed:
+    default: op
+  armesia.speed.others:
+    default: op
+  armesia.kit:
+    default: false
+  armesia.kit.admin:
+    default: op
+  armesia.nick:
+    default: op
+  armesia.nick.others:
+    default: op
+  armesia.nick.colors:
+    default: op
+  armesia.vanish:
+    default: op
+  armesia.vanish.others:
+    default: op
+  armesia.repair:
+    default: op
+  armesia.repairall:
+    default: op
+  armesia.msg:
+    default: false
+  armesia.enderchest:
+    default: false
+  armesia.enderchest.others:
+    default: op
+  armesia.home:
+    default: false
+  armesia.sethome:
+    default: false
+  armesia.homes.2:
+    default: false
+  armesia.homes.5:
+    default: false
+  armesia.homes.10:
+    default: false
+  armesia.homes.unlimited:
+    default: op
+  armesia.tp:
+    default: op
+  armesia.tphere:
+    default: op
+  armesia.tpall:
+    default: op
+  armesia.tpa:
+    default: false
+  armesia.tpahere:
+    default: false
+  armesia.tpacancel:
+    default: false
+    description: "Annuler sa propre demande de téléportation"

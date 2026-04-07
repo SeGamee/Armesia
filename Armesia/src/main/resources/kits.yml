@@ -1,0 +1,26 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  kits.yml  —  Définition des kits Armesia
+#
+#  Structure :
+#    kits:
+#      <nom>:
+#        display-name: "Nom affiché"
+#        permission:   "armesia.kit.<nom>"   # laisser vide = accessible à tous
+#        cooldown:     3600                   # secondes (0 = pas de cooldown)
+#        items:
+#          <slot>: <ItemStack Bukkit sérialisé>
+#
+#  Cooldowns joueur (géré automatiquement — NE PAS modifier) :
+#    cooldowns:
+#      <uuid>:
+#        <nom_kit>: <timestamp ms>
+# ─────────────────────────────────────────────────────────────────────────────
+kits:
+  starter:
+    display-name: "§aKit de démarrage"
+    permission:   "armesia.kit.starter"
+    cooldown:     86400
+    items: {}
+
+cooldowns: {}
+

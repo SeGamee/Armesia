@@ -2,6 +2,11 @@ package fr.segame.armesia.listeners;
 
 import fr.segame.armesia.Main;
 import fr.segame.armesiaLevel.api.LevelAPI;
+import fr.segame.armesia.commands.GodCommand;
+import fr.segame.armesia.commands.SpeedCommand;
+import fr.segame.armesia.managers.MessageManager;
+import fr.segame.armesia.managers.TpaManager;
+import fr.segame.armesia.managers.VanishManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
@@ -19,16 +24,46 @@ public class PlayersListeners implements Listener {
         Player joueur = event.getPlayer();
         Main.loadPlayer(joueur);
         Main.updateAllTabs();
-        Component component = Component.text("§7[§a+§7] " + joueur.getName());
-        event.joinMessage(component);
+
+        // ── God mode OFF + mode Survie ───────────────────────────────────────
+        GodCommand.remove(joueur.getUniqueId());
+        joueur.setGameMode(org.bukkit.GameMode.SURVIVAL);
+
+        // ── Vitesse réinitialisée ────────────────────────────────────────────
+        if (Main.getInstance().getConfig().getBoolean("speed.reset-on-login", true)) {
+            SpeedCommand.resetSpeed(joueur);
+        }
+
+
+        // ── Vanish réinitialisé ──────────────────────────────────────────────
+        if (Main.getInstance().getConfig().getBoolean("vanish.reset-on-login", false)) {
+            VanishManager.forceRemove(joueur.getUniqueId());
+        }
+
+        // ── Message de join (silencieux si vanished) ─────────────────────────
+        if (VanishManager.isVanished(joueur.getUniqueId())) {
+            event.joinMessage(null);
+        } else {
+            event.joinMessage(Component.text("§7[§a+§7] ").append(joueur.displayName()));
+        }
     }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         Player joueur = event.getPlayer();
         Main.savePlayer(joueur);
-        Component component = Component.text("§7[§c+§7] " + joueur.getName());
-        event.quitMessage(component);
+
+        TpaManager.cleanup(joueur.getUniqueId());
+        MessageManager.cleanupPlayer(joueur.getUniqueId());
+
+        // ── Vanish silent-quit ───────────────────────────────────────────────
+        if (Main.getInstance().getConfig().getBoolean("vanish.silent-quit", true)
+                && VanishManager.isVanished(joueur.getUniqueId())) {
+            event.quitMessage(null);
+            return;
+        }
+
+        event.quitMessage(Component.text("§7[§c-§7] ").append(joueur.displayName()));
     }
 
     @EventHandler
@@ -53,23 +88,20 @@ public class PlayersListeners implements Listener {
     public void onChat(AsyncPlayerChatEvent event) {
         Player joueur = event.getPlayer();
         String message = event.getMessage();
-        String group = Main.groups.get(joueur.getUniqueId());
-        String job = Main.jobs.get(joueur.getUniqueId());
+        String group   = Main.groups.get(joueur.getUniqueId());
+
         if (Main.hasGroupPermission(joueur, "chat.color")) {
             message = message.replace("&", "§");
         }
-
-        if (group == null) group = "Joueur";
-        if (job == null) job = "Citoyen";
-
+        if (group == null) group = "Citoyen";
 
         String chatPrefix = Main.getGroupChatPrefix(group);
-
-        // Récupération du niveau du joueur
-        int level = LevelAPI.getLevel(joueur.getUniqueId());
+        int    level      = LevelAPI.getLevel(joueur.getUniqueId());
         String levelPrefix = "§7[" + level + "✫] ";
 
-        event.setFormat(levelPrefix + chatPrefix + "§7" + joueur.getName() + ": §f" + message);
+        String displayName = joueur.getName();
+
+        event.setFormat(levelPrefix + chatPrefix + "§7" + displayName + ": §f" + message);
     }
 
     @org.bukkit.event.EventHandler

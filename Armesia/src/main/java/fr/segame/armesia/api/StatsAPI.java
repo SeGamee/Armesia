@@ -23,4 +23,6 @@ public class StatsAPI {
     public int getKillstreak(UUID uuid) {
         return statsManager.getKillstreak(uuid);
     }
+
+    public String getRatio(UUID uuid) { return statsManager.getFormattedKillDeathRatio(uuid); }
 }
