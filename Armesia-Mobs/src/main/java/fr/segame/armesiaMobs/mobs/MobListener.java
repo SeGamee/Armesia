@@ -2,12 +2,16 @@ package fr.segame.armesiaMobs.mobs;
 
 import fr.segame.armesia.api.EconomyAPI;
 import fr.segame.armesiaLevel.api.LevelAPI;
+import fr.segame.armesiaMobs.ArmesiaMobs;
 import fr.segame.armesiaMobs.loot.LootManager;
 import fr.segame.armesiaMobs.managers.DebugManager;
+import fr.segame.armesiaMobs.managers.StatsManager;
 import fr.segame.armesiaMobs.zones.ZoneData;
 import fr.segame.armesiaMobs.zones.ZoneManager;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.AbstractVillager;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Villager;
@@ -16,6 +20,9 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.Random;
 
@@ -27,16 +34,18 @@ public class MobListener implements Listener {
     private final ZoneManager zoneManager;
     private final DebugManager debug;
     private final EconomyAPI economyAPI;
+    private final StatsManager statsManager;
     private final Random random = new Random();
 
     public MobListener(MobManager mobManager, LootManager lootManager,
                        ZoneManager zoneManager, DebugManager debug,
-                       EconomyAPI economyAPI) {
-        this.mobManager  = mobManager;
-        this.lootManager = lootManager;
-        this.zoneManager = zoneManager;
-        this.debug       = debug;
-        this.economyAPI  = economyAPI;
+                       EconomyAPI economyAPI, StatsManager statsManager) {
+        this.mobManager   = mobManager;
+        this.lootManager  = lootManager;
+        this.zoneManager  = zoneManager;
+        this.debug        = debug;
+        this.economyAPI   = economyAPI;
+        this.statsManager = statsManager;
     }
 
     // ❌ BLOQUE MOBS VANILLA
@@ -49,6 +58,48 @@ public class MobListener implements Listener {
         }
     }
 
+    // 🔄 NETTOYAGE des chunks chargés — supprime/réenregistre les mobs sans tag PDC
+    @EventHandler
+    public void onChunkLoad(ChunkLoadEvent event) {
+        // Différé d'un tick pour que les entités du chunk soient bien accessibles
+        Bukkit.getScheduler().runTask(ArmesiaMobs.getInstance(), () -> {
+            for (Entity entity : event.getChunk().getEntities()) {
+                processLoadedEntity(entity);
+            }
+        });
+    }
+
+    /** Vérifie un mob chargé : sans PDC → supprimé ; PDC mais sans instance → réenregistré. */
+    private void processLoadedEntity(Entity entity) {
+        if (!(entity instanceof org.bukkit.entity.Mob)) return;
+        PersistentDataContainer pdc = entity.getPersistentDataContainer();
+
+        if (!pdc.has(ArmesiaMobs.MOB_ID_KEY, PersistentDataType.STRING)) {
+            // Mob vanilla ou orphelin sans tag → suppression
+            entity.remove();
+            debug.logVerbose("§c[CHUNK-CLEANUP]§7 entité=§f" + entity.getType().name()
+                    + "§7 uuid=§f" + entity.getUniqueId() + "§7 raison=§cPAS_DE_PDC");
+            return;
+        }
+
+        // Déjà enregistré → rien à faire
+        if (mobManager.getInstance(entity.getUniqueId()) != null) return;
+
+        String mobId  = pdc.get(ArmesiaMobs.MOB_ID_KEY,  PersistentDataType.STRING);
+        String zoneId = pdc.get(ArmesiaMobs.ZONE_ID_KEY, PersistentDataType.STRING);
+
+        if (mobId == null || mobManager.getMob(mobId) == null) {
+            // La définition du mob n'existe plus → suppression
+            entity.remove();
+            debug.log("§c[CHUNK-CLEANUP]§7 mob=§f" + mobId + "§7 raison=§cDEF_SUPPRIMEE");
+            return;
+        }
+
+        // Réenregistrement après redémarrage
+        mobManager.addInstance(new MobInstance(entity.getUniqueId(), mobId,
+                zoneId != null ? zoneId : "manual"));
+        debug.logVerbose("§b[CHUNK-RESTORE]§7 mob=§f" + mobId + "§7 zone=§f" + zoneId);
+    }
 
     // 🗑️ DROPS — vide pour TOUS les mobs (vanilla ou custom)
     @EventHandler
@@ -74,9 +125,14 @@ public class MobListener implements Listener {
         if (money > 0 && economyAPI != null) economyAPI.addMoney(player.getUniqueId(), money);
         if (xp > 0)    LevelAPI.addXP(player.getUniqueId(), xp);
 
+        // Stats
+        statsManager.addKill(player.getUniqueId(), data.getId());
+        statsManager.save();
+
         String mobName = ChatColor.translateAlternateColorCodes('&', data.getName());
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&',
-                "&aVous avez tué " + mobName + " &a→ &6+" + money + "$ &7| &b+" + xp + "XP"));
+        ArmesiaMobs.getInstance().getMessages()
+                .getLines("kill.notification", "mob", mobName, "money", money, "xp", xp)
+                .forEach(player::sendMessage);
 
         mobManager.removeInstance(event.getEntity().getUniqueId());
     }
@@ -130,10 +186,7 @@ public class MobListener implements Listener {
         event.setCancelled(true);
     }
 
-    // 🕊️ VILLAGEOIS PACIFIQUES — annuler tous les dégâts sauf ceux des joueurs
-    //    Les dégâts de l'environnement / mobs déclenchent le Brain PANIC du villageois
-    //    ce qui active un boost de vitesse via le pathfinder.
-    //    Les joueurs peuvent toujours les tuer pour obtenir leur loot (direct + projectile).
+    // 🕊️ VILLAGEOIS PACIFIQUES — annuler tous les dégâts sauf joueurs et explosions
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onVillagerDamage(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Villager)) return;
@@ -145,6 +198,12 @@ public class MobListener implements Listener {
             // Projectile (flèche, trident…) tiré par un joueur
             if (dmg.getDamager() instanceof Projectile proj && proj.getShooter() instanceof Player) return;
         }
+
+        // Explosions (TNT, Creeper, etc.) — autoriser le dégât
+        EntityDamageEvent.DamageCause cause = event.getCause();
+        if (cause == EntityDamageEvent.DamageCause.ENTITY_EXPLOSION
+                || cause == EntityDamageEvent.DamageCause.BLOCK_EXPLOSION) return;
+
         event.setCancelled(true);
     }
 

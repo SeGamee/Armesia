@@ -9,8 +9,7 @@ import fr.segame.armesia.listeners.KillListener;
 import fr.segame.armesia.listeners.PlayersListeners;
 import fr.segame.armesia.listeners.VanishListener;
 import fr.segame.armesia.managers.*;
-import fr.segame.armesia.player.PlayerDataManager;
-import fr.segame.armesiaLevel.ArmesiaLevel;
+import fr.segame.armesia.player.PlayerDataManager;import fr.segame.armesiaLevel.ArmesiaLevel;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -27,16 +26,16 @@ public final class Main extends JavaPlugin {
 
     public static Main instance;
 
-    // ─── Managers statiques ──────────────────────────────────────────────────────
+    // ─── Managers statiques (accès direct depuis toute la codebase) ─────────────
     public static GroupManager   groupManager;
     public static StatsManager   statsManager;
     public static EconomyManager economyManager;
 
-    // ─── Caches joueur ───────────────────────────────────────────────────────────
-    public static Map<UUID, String> groups = new HashMap<>();
-    public static Map<UUID, String> jobs   = new HashMap<>();
+    // ─── Caches joueur partagés (lus/écrits par PlayerDataManager & compagnie) ──
+    public static Map<UUID, String>  groups            = new HashMap<>();
+    public static Map<UUID, String>  jobs              = new HashMap<>();
 
-    // ─── Managers d'instance ─────────────────────────────────────────────────────
+    // ─── Managers d'instance ────────────────────────────────────────────────────
     private EconomyAPI        economyAPI;
     private StatsAPI          statsAPI;
     private PlayerDataManager playerDataManager;
@@ -53,6 +52,7 @@ public final class Main extends JavaPlugin {
         instance = this;
         saveDefaultConfig();
 
+        // ─── Initialisation des managers ────────────────────────────────────────
         groupManager      = new GroupManager(this);
         groupManager.ensureDefaultGroupExists();
 
@@ -133,7 +133,8 @@ public final class Main extends JavaPlugin {
         getCommand("help").setExecutor(new HelpCommand());
         // ── Nouvelles commandes ───────────────────────────────────────────────
         getCommand("speed").setExecutor(new SpeedCommand());
-        getCommand("kit").setExecutor(new KitCommand(kitManager));
+        KitCommand kitCmd = new KitCommand(kitManager);
+        getCommand("kit").setExecutor(kitCmd);
         getCommand("vanish").setExecutor(new VanishCommand());
         RepairCommand repairCmd = new RepairCommand();
         getCommand("repair").setExecutor(repairCmd);
@@ -166,17 +167,17 @@ public final class Main extends JavaPlugin {
     //  Getters d'instance
     // ============================================================================
 
-    public static Main           getInstance()        { return instance; }
-    public static GroupManager   getGroupManager()    { return groupManager; }
-    public static StatsManager   getStatsManager()    { return statsManager; }
-    public static EconomyManager getEconomyManager()  { return economyManager; }
+    public static Main          getInstance()        { return instance; }
+    public static GroupManager  getGroupManager()    { return groupManager; }
+    public static StatsManager  getStatsManager()    { return statsManager; }
+    public static EconomyManager getEconomyManager() { return economyManager; }
 
-    public EconomyAPI        getEconomyAPI()          { return economyAPI; }
-    public StatsAPI          getStatsAPI()            { return statsAPI; }
-    public PlayerDataManager getPlayerDataManager()   { return playerDataManager; }
-    public TabManager        getTabManager()          { return tabManager; }
-    public HomeManager       getHomeManager()         { return homeManager; }
-    public KitManager        getKitManager()          { return kitManager; }
+    public EconomyAPI        getEconomyAPI()         { return economyAPI; }
+    public StatsAPI          getStatsAPI()           { return statsAPI; }
+    public PlayerDataManager getPlayerDataManager()  { return playerDataManager; }
+    public TabManager        getTabManager()         { return tabManager; }
+    public HomeManager       getHomeManager()        { return homeManager; }
+    public KitManager        getKitManager()         { return kitManager; }
 
     // ============================================================================
     //  Délégués → PlayerDataManager  (rétro-compatibilité avec les appelants)
@@ -186,9 +187,9 @@ public final class Main extends JavaPlugin {
     public FileConfiguration getPlayersConfig() { return playerDataManager.getPlayersConfig(); }
     public void savePlayers()                   { playerDataManager.savePlayers(); }
 
-    public static void loadPlayer(Player player)                         { instance.playerDataManager.loadPlayer(player); }
-    public static void savePlayer(Player player)                         { instance.playerDataManager.savePlayer(player); }
-    public static boolean hasGroupPermission(Player player, String perm) { return instance.playerDataManager.hasGroupPermission(player, perm); }
+    public static void loadPlayer(Player player)                        { instance.playerDataManager.loadPlayer(player); }
+    public static void savePlayer(Player player)                        { instance.playerDataManager.savePlayer(player); }
+    public static boolean hasGroupPermission(Player player, String perm){ return instance.playerDataManager.hasGroupPermission(player, perm); }
 
     /**
      * Vérifie une permission via le système de groupe + Bukkit.
@@ -203,10 +204,10 @@ public final class Main extends JavaPlugin {
     //  Délégués → TabManager  (rétro-compatibilité avec les appelants)
     // ============================================================================
 
-    public static void   updateTab(Player player)         { instance.tabManager.updateTab(player); }
-    public static void   updateAllTabs()                  { instance.tabManager.updateAllTabs(); }
-    public static String getGroupChatPrefix(String group) { return instance.tabManager.getGroupChatPrefix(group); }
-    public static String getGroupTabPrefix(String group)  { return instance.tabManager.getGroupTabPrefix(group); }
+    public static void   updateTab(Player player)              { instance.tabManager.updateTab(player); }
+    public static void   updateAllTabs()                       { instance.tabManager.updateAllTabs(); }
+    public static String getGroupChatPrefix(String group)      { return instance.tabManager.getGroupChatPrefix(group); }
+    public static String getGroupTabPrefix(String group)       { return instance.tabManager.getGroupTabPrefix(group); }
 
     /** Enregistré par Armesia-Scoreboard au démarrage (pas de dépendance inverse). */
     public static void registerScoreboardUpdateCallback(Consumer<Player> callback) {

@@ -1,5 +1,7 @@
 package fr.segame.armesiaMobs.commands;
 
+import fr.segame.armesiaMobs.ArmesiaMobs;
+import fr.segame.armesiaMobs.config.MessagesConfig;
 import fr.segame.armesiaMobs.config.ZoneConfig;
 import fr.segame.armesiaMobs.managers.DebugManager;
 import fr.segame.armesiaMobs.mobs.MobManager;
@@ -42,6 +44,8 @@ public class ZoneCommand implements CommandExecutor, TabCompleter {
     private final ZoneConfig   zoneConfig;
     private final DebugManager debugManager;
 
+    private MessagesConfig msg() { return ArmesiaMobs.getInstance().getMessages(); }
+
     public ZoneCommand(ZoneManager zoneManager, MobManager mobManager,
                        ZoneConfig zoneConfig, DebugManager debugManager) {
         this.zoneManager  = zoneManager;
@@ -57,20 +61,20 @@ public class ZoneCommand implements CommandExecutor, TabCompleter {
         if (args.length == 0) { sendHelp(sender); return true; }
 
         switch (args[0].toLowerCase()) {
-            case "list"      -> cmdList(sender);
-            case "info"      -> { if (need(sender, args, 2)) cmdInfo(sender, args[1]); }
-            case "create"    -> { if (needPlayer(sender) && need(sender, args, 2)) cmdCreate((Player) sender, args[1]); }
-            case "delete"    -> { if (need(sender, args, 2)) cmdDelete(sender, args[1]); }
-            case "pos1"      -> { if (needPlayer(sender) && need(sender, args, 2)) cmdPos((Player) sender, args[1], 1); }
-            case "pos2"      -> { if (needPlayer(sender) && need(sender, args, 2)) cmdPos((Player) sender, args[1], 2); }
-            case "tp"        -> { if (needPlayer(sender) && need(sender, args, 2)) cmdTp((Player) sender, args[1]); }
-            case "check"     -> { if (needPlayer(sender)) cmdCheck((Player) sender); }
-            case "debug"     -> { if (needPlayer(sender)) cmdDebug((Player) sender, args); }
-            case "addmob"    -> { if (need(sender, args, 3)) cmdAddMob(sender, args[1], args[2]); }
-            case "removemob" -> { if (need(sender, args, 3)) cmdRemoveMob(sender, args[1], args[2]); }
-            case "setweight" -> { if (need(sender, args, 4)) cmdSetWeight(sender, args[1], args[2], args[3]); }
-            case "set"       -> { if (need(sender, args, 4)) cmdSet(sender, args); }
-            case "preview"   -> { if (needPlayer(sender) && need(sender, args, 2)) cmdPreview((Player) sender, args[1]); }
+            case "list"      -> { if (perm(sender, "armesia.zone.list"))                                            cmdList(sender); }
+            case "info"      -> { if (perm(sender, "armesia.zone.info")    && need(sender, args, 2))               cmdInfo(sender, args[1]); }
+            case "create"    -> { if (perm(sender, "armesia.zone.create")  && needPlayer(sender) && need(sender, args, 2)) cmdCreate((Player) sender, args[1]); }
+            case "delete"    -> { if (perm(sender, "armesia.zone.delete")  && need(sender, args, 2))               cmdDelete(sender, args[1]); }
+            case "pos1"      -> { if (perm(sender, "armesia.zone.manage")  && needPlayer(sender) && need(sender, args, 2)) cmdPos((Player) sender, args[1], 1); }
+            case "pos2"      -> { if (perm(sender, "armesia.zone.manage")  && needPlayer(sender) && need(sender, args, 2)) cmdPos((Player) sender, args[1], 2); }
+            case "tp"        -> { if (perm(sender, "armesia.zone.tp")      && needPlayer(sender) && need(sender, args, 2)) cmdTp((Player) sender, args[1]); }
+            case "check"     -> { if (perm(sender, "armesia.zone.check")   && needPlayer(sender))                  cmdCheck((Player) sender); }
+            case "debug"     -> { if (perm(sender, "armesia.zone.debug")   && needPlayer(sender))                  cmdDebug((Player) sender, args); }
+            case "addmob"    -> { if (perm(sender, "armesia.zone.manage")  && need(sender, args, 3))               cmdAddMob(sender, args[1], args[2]); }
+            case "removemob" -> { if (perm(sender, "armesia.zone.manage")  && need(sender, args, 3))               cmdRemoveMob(sender, args[1], args[2]); }
+            case "setweight" -> { if (perm(sender, "armesia.zone.manage")  && need(sender, args, 4))               cmdSetWeight(sender, args[1], args[2], args[3]); }
+            case "set"       -> { if (perm(sender, "armesia.zone.manage")  && need(sender, args, 4))               cmdSet(sender, args); }
+            case "preview"   -> { if (perm(sender, "armesia.zone.preview") && needPlayer(sender) && need(sender, args, 2)) cmdPreview((Player) sender, args[1]); }
             default          -> sendHelp(sender);
         }
         return true;
@@ -140,50 +144,45 @@ public class ZoneCommand implements CommandExecutor, TabCompleter {
     }
 
     private void cmdCreate(Player p, String id) {
-        if (zoneManager.getZone(id) != null) {
-            p.sendMessage(PREFIX + ERR + "La zone '" + id + "' existe déjà."); return;
-        }
+        if (zoneManager.getZone(id) != null) { p.sendMessage(msg().get("zone.exists", "id", id)); return; }
         Location loc = p.getLocation();
         ZoneData zone = new ZoneData(id, loc.clone(), loc.clone(), List.of(), 20);
         zoneManager.registerZone(zone);
         zoneConfig.saveZone(zone);
-        p.sendMessage(PREFIX + OK + "Zone '" + id + "' créée.");
-        p.sendMessage(PREFIX + "§7Définissez les coins : §f/zone pos1 " + id + " §7et §f/zone pos2 " + id);
+        p.sendMessage(msg().get("zone.created", "id", id));
+        p.sendMessage(msg().get("zone.created-hint", "id", id));
     }
 
     private void cmdDelete(CommandSender s, String id) {
-        if (zoneManager.getZone(id) == null) { s.sendMessage(PREFIX + ERR + "Zone '" + id + "' introuvable."); return; }
+        if (zoneManager.getZone(id) == null) { s.sendMessage(msg().get("zone.not-found", "id", id)); return; }
         zoneManager.removeZone(id);
         zoneConfig.deleteZone(id);
-        s.sendMessage(PREFIX + OK + "Zone '" + id + "' supprimée (mobs despawnés).");
+        s.sendMessage(msg().get("zone.deleted", "id", id));
     }
 
     private void cmdPos(Player p, String id, int corner) {
         ZoneData z = zoneManager.getZone(id);
-        if (z == null) { p.sendMessage(PREFIX + ERR + "Zone '" + id + "' introuvable."); return; }
+        if (z == null) { p.sendMessage(msg().get("zone.not-found", "id", id)); return; }
         Location loc = p.getLocation();
-        if (corner == 1) z.setPos1(loc.clone());
-        else             z.setPos2(loc.clone());
+        if (corner == 1) z.setPos1(loc.clone()); else z.setPos2(loc.clone());
         zoneConfig.saveZone(z);
-        p.sendMessage(PREFIX + OK + "Pos" + corner + " de '" + id + "' : §f" + fmtLoc(loc));
+        p.sendMessage(msg().get("zone.pos-set", "corner", corner, "id", id, "pos", fmtLoc(loc)));
     }
 
     private void cmdTp(Player p, String id) {
         ZoneData z = zoneManager.getZone(id);
-        if (z == null) { p.sendMessage(PREFIX + ERR + "Zone '" + id + "' introuvable."); return; }
+        if (z == null) { p.sendMessage(msg().get("zone.not-found", "id", id)); return; }
         Location center = zoneManager.getCenter(z);
-        if (center == null || center.getWorld() == null) {
-            p.sendMessage(PREFIX + ERR + "La zone n'a pas de position valide."); return;
-        }
+        if (center == null || center.getWorld() == null) { p.sendMessage(msg().get("zone.tp-no-pos")); return; }
         Location safe = center.getWorld().getHighestBlockAt(center).getLocation().add(0.5, 1, 0.5);
         p.teleport(safe);
-        p.sendMessage(PREFIX + OK + "Téléporté au centre de '" + id + "'.");
+        p.sendMessage(msg().get("zone.tp-ok", "id", id));
     }
 
     private void cmdCheck(Player p) {
         ZoneData z = zoneManager.getZoneAt(p.getLocation());
         if (z == null) {
-            p.sendMessage(PREFIX + ERR + "Vous n'êtes dans aucune zone.");
+            p.sendMessage(msg().get("zone.not-in-zone"));
             p.sendMessage(PREFIX + "§7Zones : §f" + zoneManager.getZoneIds());
             p.sendMessage(PREFIX + "§7Pos : §f" + fmtLoc(p.getLocation()));
             return;
@@ -257,36 +256,34 @@ public class ZoneCommand implements CommandExecutor, TabCompleter {
 
     private void cmdAddMob(CommandSender s, String id, String mobId) {
         ZoneData z = zoneManager.getZone(id);
-        if (z == null) { s.sendMessage(PREFIX + ERR + "Zone '" + id + "' introuvable."); return; }
-        if (mobManager.getMob(mobId) == null) { s.sendMessage(PREFIX + ERR + "Mob '" + mobId + "' inexistant."); return; }
-        if (z.getMobs().contains(mobId)) { s.sendMessage(PREFIX + ERR + "Mob '" + mobId + "' déjà dans la zone."); return; }
+        if (z == null) { s.sendMessage(msg().get("zone.not-found", "id", id)); return; }
+        if (mobManager.getMob(mobId) == null) { s.sendMessage(msg().get("zone.mob-not-found", "mobId", mobId)); return; }
+        if (z.getMobs().contains(mobId)) { s.sendMessage(msg().get("zone.mob-already-in", "mobId", mobId)); return; }
         z.getMobs().add(mobId);
         zoneConfig.saveZone(z);
-        s.sendMessage(PREFIX + OK + "Mob '" + mobId + "' ajouté à '" + id + "'.");
+        s.sendMessage(msg().get("zone.mob-added", "mobId", mobId, "id", id));
     }
 
     private void cmdRemoveMob(CommandSender s, String id, String mobId) {
         ZoneData z = zoneManager.getZone(id);
-        if (z == null) { s.sendMessage(PREFIX + ERR + "Zone '" + id + "' introuvable."); return; }
-        if (!z.getMobs().remove(mobId)) { s.sendMessage(PREFIX + ERR + "Mob '" + mobId + "' absent de cette zone."); return; }
-        z.setMobWeight(mobId, 0); // nettoyer le poids s'il était défini
+        if (z == null) { s.sendMessage(msg().get("zone.not-found", "id", id)); return; }
+        if (!z.getMobs().remove(mobId)) { s.sendMessage(msg().get("zone.mob-not-in", "mobId", mobId)); return; }
+        z.setMobWeight(mobId, 0);
         zoneConfig.saveZone(z);
-        s.sendMessage(PREFIX + OK + "Mob '" + mobId + "' retiré de '" + id + "'.");
+        s.sendMessage(msg().get("zone.mob-removed", "mobId", mobId, "id", id));
     }
 
-    /** /zone setweight <zoneId> <mobId> <poids> */
     private void cmdSetWeight(CommandSender s, String id, String mobId, String weightStr) {
         ZoneData z = zoneManager.getZone(id);
-        if (z == null)              { s.sendMessage(PREFIX + ERR + "Zone '" + id + "' introuvable."); return; }
-        if (!z.getMobs().contains(mobId)) { s.sendMessage(PREFIX + ERR + "Mob '" + mobId + "' absent de la zone (utilisez /zone addmob)."); return; }
+        if (z == null) { s.sendMessage(msg().get("zone.not-found", "id", id)); return; }
+        if (!z.getMobs().contains(mobId)) { s.sendMessage(msg().get("zone.mob-not-in", "mobId", mobId)); return; }
         double weight;
-        try { weight = Double.parseDouble(weightStr); } catch (NumberFormatException e) {
-            s.sendMessage(PREFIX + ERR + "Poids invalide : §f" + weightStr + " §c(nombre > 0)"); return; }
-        if (weight <= 0) { s.sendMessage(PREFIX + ERR + "Le poids doit être > 0."); return; }
+        try { weight = Double.parseDouble(weightStr); }
+        catch (NumberFormatException e) { s.sendMessage(msg().get("zone.weight-invalid", "value", weightStr)); return; }
+        if (weight <= 0) { s.sendMessage(msg().get("zone.weight-zero")); return; }
         z.setMobWeight(mobId, weight);
         zoneConfig.saveZone(z);
-        s.sendMessage(PREFIX + OK + "Poids de §f'" + mobId + "' §adans §f'" + id + "' §a: §f" + weight
-                + "  §7(" + fmtProb(z, mobId) + " de chance)");
+        s.sendMessage(msg().get("zone.weight-set", "mobId", mobId, "id", id, "weight", weight, "prob", fmtProb(z, mobId)));
     }
 
     /**
@@ -317,13 +314,13 @@ public class ZoneCommand implements CommandExecutor, TabCompleter {
         return String.format("%.1f%%", z.getMobWeight(mobId) / total * 100);
     }
 
-    /** /zone preview <id> — active/désactive la prévisualisation particules de la bordure */
+    /** /zone preview <id> */
     private void cmdPreview(Player p, String id) {
         ZoneData z = zoneManager.getZone(id);
-        if (z == null) { p.sendMessage(PREFIX + ERR + "Zone '" + id + "' introuvable."); return; }
+        if (z == null) { p.sendMessage(msg().get("zone.not-found", "id", id)); return; }
         zoneManager.toggleBorderPreview(p, id);
         if (zoneManager.isPreviewingBorder(p, id)) {
-            p.sendMessage(PREFIX + OK + "Prévisualisation activée §f'" + id + "'§a — légende :");
+            p.sendMessage(msg().get("zone.preview-on", "id", id));
             p.sendMessage("  §f■ Blanc        §7= bordure réelle de la zone");
             if (z.getBoundaryTolerance() > 0)
                 p.sendMessage("  §6■ Orange       §7= zone + tolérance §f(" + z.getBoundaryTolerance() + " blocs§7)");
@@ -333,9 +330,8 @@ public class ZoneCommand implements CommandExecutor, TabCompleter {
             p.sendMessage("  §a■ Vert         §7= despawn ratio1 §f(" + String.format("%.0f", d * z.getDespawnRatio1()) + " blocs§7)");
             p.sendMessage("  §e■ Jaune        §7= despawn ratio2 §f(" + String.format("%.0f", d * z.getDespawnRatio2()) + " blocs§7)");
             p.sendMessage("  §c■ Orange-rouge §7= despawn ratio3 §f(" + String.format("%.0f", d * z.getDespawnRatio3()) + " blocs§7)");
-            p.sendMessage(PREFIX + "§8(Les cercles sont centrés sur le centre de la zone)");
         } else {
-            p.sendMessage(PREFIX + "§7Prévisualisation désactivée §f'" + id + "'§7.");
+            p.sendMessage(msg().get("zone.preview-off", "id", id));
         }
     }
 
@@ -344,7 +340,7 @@ public class ZoneCommand implements CommandExecutor, TabCompleter {
         String prop = args[2].toLowerCase();
         String val  = args[3];
         ZoneData z = zoneManager.getZone(id);
-        if (z == null) { s.sendMessage(PREFIX + ERR + "Zone '" + id + "' introuvable."); return; }
+        if (z == null) { s.sendMessage(msg().get("zone.not-found", "id", id)); return; }
 
         try {
             switch (prop) {
@@ -384,13 +380,21 @@ public class ZoneCommand implements CommandExecutor, TabCompleter {
                 // ── Frontière ──
                 case "boundarytolerance", "tolerance" -> z.setBoundaryTolerance(Double.parseDouble(val));
                 case "bouncestrength",    "bounce"    -> z.setBounceStrength(Double.parseDouble(val));
-                default -> { s.sendMessage(PREFIX + ERR + "Propriété inconnue : " + prop); return; }
+                default -> { s.sendMessage(msg().get("zone.set-unknown-prop", "prop", prop)); return; }
             }
         } catch (NumberFormatException e) {
-            s.sendMessage(PREFIX + ERR + "Valeur invalide : " + val); return;
+            s.sendMessage(msg().get("common.invalid-value", "value", val)); return;
         }
         zoneConfig.saveZone(z);
-        s.sendMessage(PREFIX + OK + "Zone '" + id + "' : §f" + prop + " §a= §f" + val);
+        s.sendMessage(msg().get("zone.set-ok", "id", id, "prop", prop, "value", val));
+    }
+
+    // ─── Helpers ──────────────────────────────────────────────────────────────
+
+    private boolean perm(CommandSender s, String node) {
+        if (s.hasPermission(node)) return true;
+        s.sendMessage(msg().get("common.no-permission"));
+        return false;
     }
 
     // ─── Tab Completion ───────────────────────────────────────────────────────
@@ -479,11 +483,11 @@ public class ZoneCommand implements CommandExecutor, TabCompleter {
 
     private boolean need(CommandSender s, String[] args, int min) {
         if (args.length >= min) return true;
-        s.sendMessage(PREFIX + ERR + "Arguments insuffisants."); return false;
+        s.sendMessage(msg().get("common.args-missing")); return false;
     }
     private boolean needPlayer(CommandSender s) {
         if (s instanceof Player) return true;
-        s.sendMessage(PREFIX + ERR + "Réservé aux joueurs."); return false;
+        s.sendMessage(msg().get("common.player-only")); return false;
     }
     private String fmtLoc(Location l) {
         return String.format("§7(§f%.1f§7, §f%.1f§7, §f%.1f§7) §f%s",

@@ -34,7 +34,6 @@ public class PlayersListeners implements Listener {
             SpeedCommand.resetSpeed(joueur);
         }
 
-
         // ── Vanish réinitialisé ──────────────────────────────────────────────
         if (Main.getInstance().getConfig().getBoolean("vanish.reset-on-login", false)) {
             VanishManager.forceRemove(joueur.getUniqueId());

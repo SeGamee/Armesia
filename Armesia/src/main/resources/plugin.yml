@@ -193,12 +193,6 @@ permissions:
     default: false
   armesia.kit.admin:
     default: op
-  armesia.nick:
-    default: op
-  armesia.nick.others:
-    default: op
-  armesia.nick.colors:
-    default: op
   armesia.vanish:
     default: op
   armesia.vanish.others:

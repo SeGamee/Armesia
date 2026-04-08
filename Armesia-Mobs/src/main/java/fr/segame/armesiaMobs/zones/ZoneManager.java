@@ -390,8 +390,25 @@ public class ZoneManager {
                 zoneSpawnTicker.merge(zoneId, 1, Integer::sum);
             }
 
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                ZoneData zone = getZoneAt(player.getLocation());
+            // ── Déduplication : un seul joueur représentant par zone ─────────
+            // Évite le double-spawn quand plusieurs joueurs sont au même endroit.
+            // On garde le joueur le plus "nécessiteux" (le moins de mobs nearby).
+            Map<String, Player> repPerZone = new LinkedHashMap<>();
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                ZoneData z = getZoneAt(p.getLocation());
+                if (z == null) continue;
+                if (!repPerZone.containsKey(z.getId())) {
+                    repPerZone.put(z.getId(), p);
+                } else {
+                    Player existing = repPerZone.get(z.getId());
+                    if (countMobsAroundPlayer(p, z) < countMobsAroundPlayer(existing, z))
+                        repPerZone.put(z.getId(), p);
+                }
+            }
+
+            for (Map.Entry<String, Player> repEntry : repPerZone.entrySet()) {
+                Player player = repEntry.getValue();
+                ZoneData zone = zones.get(repEntry.getKey());
                 if (zone == null) continue;
 
                 // ── Intervalle (en exécutions = secondes à 20 TPS) ─────────

@@ -1,0 +1,119 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Armesia-Mobs — messages.yml
+# Modifiez librement les textes et couleurs (&code).
+# Placeholders : indiqués entre accolades {placeholder}
+#
+# MESSAGES SIMPLES  : une ligne, valeur directe.
+#   exemple: not-found: "&cTexte..."
+#
+# MESSAGES MULTI-LIGNES : liste YAML (tirets).
+#   Ajoutez ou supprimez des tirets librement — chaque tiret = une ligne en jeu.
+#   Avec un seul tiret → une seule ligne. Avec 5 tirets → 5 lignes.
+#   exemple:
+#     kill:
+#       notification:
+#         - "&aLigne 1"
+#         - "&bLigne 2"
+#         - "&cLigne 3"
+#
+# PRÉFIXES : intégrés directement dans chaque message.
+#   Retirez &8[&6Mob&8] &r (ou toute autre partie) si vous ne voulez pas de préfixe.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ─── Messages communs (erreurs génériques, sans préfixe) ─────────────────────
+common:
+  no-permission:  "&cVous n'avez pas la permission d'effectuer cette action."
+  player-only:    "&cCette commande est réservée aux joueurs."
+  args-missing:   "&cArguments insuffisants."
+  invalid-number: "&cValeur numérique invalide."
+  invalid-value:  "&cValeur invalide : &f{value}"
+
+# ─── /mob ─────────────────────────────────────────────────────────────────────
+mob:
+  none:          "&8[&6Mob&8] &r&7Aucun mob enregistré."
+  not-found:     "&8[&6Mob&8] &r&cMob '&f{id}&c' introuvable."
+  created:       "&8[&6Mob&8] &r&aMob '&f{id}&a' créé avec succès."
+  deleted:       "&8[&6Mob&8] &r&aMob '&f{id}&a' supprimé."
+  modified:      "&8[&6Mob&8] &r&aMob '&f{id}&a' modifié."
+  invalid-type:  "&8[&6Mob&8] &r&cType d'entité invalide : &f{type}"
+  spawn-ok:      "&8[&6Mob&8] &r&e{count}x &f{name} &aspawné(s)."
+
+# ─── /loot ────────────────────────────────────────────────────────────────────
+loot:
+  none:               "&8[&dLoot&8] &r&7Aucune table de loot."
+  not-found:          "&8[&dLoot&8] &r&cTable '&f{table}&c' introuvable."
+  exists:             "&8[&dLoot&8] &r&cLa table '&f{table}&c' existe déjà."
+  empty:              "&8[&dLoot&8] &r&7La table '&f{table}&7' est vide."
+  created:            "&8[&dLoot&8] &r&aTable '&f{table}&a' créée."
+  deleted:            "&8[&dLoot&8] &r&aTable '&f{table}&a' supprimée."
+  entry-added:        "&8[&dLoot&8] &r&aEntrée ajoutée à '&f{table}&a' : &f{item} &7×{min}-{max} &e{chance}"
+  entry-added-custom: "&8[&dLoot&8] &r&aItem &f{item} &aajouté à '&f{table}&a' &7×{min}-{max} &e{chance} &b[Custom]"
+  entry-removed:      "&8[&dLoot&8] &r&aEntrée #&f{index}&a supprimée de '&f{table}&a'."
+  index-invalid:      "&8[&dLoot&8] &r&cIndex hors limites."
+  material-invalid:   "&8[&dLoot&8] &r&cMaterial invalide : &f{material}"
+  chance-invalid:     "&8[&dLoot&8] &r&cLa chance doit être entre &f0.0 &cet &f1.0&c."
+  min-max-invalid:    "&8[&dLoot&8] &r&c'min' doit être &f≤ &c'max'."
+  hand-empty:         "&8[&dLoot&8] &r&cVous ne tenez rien en main."
+
+# ─── /zone ────────────────────────────────────────────────────────────────────
+zone:
+  none:             "&8[&2Zone&8] &r&7Aucune zone enregistrée."
+  not-found:        "&8[&2Zone&8] &r&cZone '&f{id}&c' introuvable."
+  exists:           "&8[&2Zone&8] &r&cLa zone '&f{id}&c' existe déjà."
+  created:          "&8[&2Zone&8] &r&aZone '&f{id}&a' créée."
+  created-hint:     "&8[&2Zone&8] &r&7Définissez les coins : &f/zone pos1 {id} &7et &f/zone pos2 {id}"
+  deleted:          "&8[&2Zone&8] &r&aZone '&f{id}&a' supprimée &7(mobs despawnés)."
+  pos-set:          "&8[&2Zone&8] &r&aPos{corner} de '&f{id}&a' définie : &f{pos}"
+  tp-ok:            "&8[&2Zone&8] &r&aTéléporté au centre de '&f{id}&a'."
+  tp-no-pos:        "&8[&2Zone&8] &r&cLa zone n'a pas de position valide."
+  not-in-zone:      "&8[&2Zone&8] &r&cVous n'êtes dans aucune zone."
+  mob-added:        "&8[&2Zone&8] &r&aMob '&f{mobId}&a' ajouté à '&f{id}&a'."
+  mob-removed:      "&8[&2Zone&8] &r&aMob '&f{mobId}&a' retiré de '&f{id}&a'."
+  mob-not-found:    "&8[&2Zone&8] &r&cMob '&f{mobId}&c' inexistant."
+  mob-already-in:   "&8[&2Zone&8] &r&cMob '&f{mobId}&c' est déjà dans la zone."
+  mob-not-in:       "&8[&2Zone&8] &r&cMob '&f{mobId}&c' absent de cette zone."
+  weight-set:       "&8[&2Zone&8] &r&aPoids de '&f{mobId}&a' dans '&f{id}&a' : &f{weight} &7({prob} de chance)"
+  weight-invalid:   "&8[&2Zone&8] &r&cPoids invalide : &f{value} &c(nombre &f> 0 &crequis)"
+  weight-zero:      "&8[&2Zone&8] &r&cLe poids doit être &f> 0&c."
+  set-ok:           "&8[&2Zone&8] &r&aZone '&f{id}&a' : &f{prop} &a= &f{value}"
+  set-unknown-prop: "&8[&2Zone&8] &r&cPropriété inconnue : &f{prop}"
+  preview-on:       "&8[&2Zone&8] &r&aPrévisualisation particules activée pour '&f{id}&a'."
+  preview-off:      "&8[&2Zone&8] &r&7Prévisualisation désactivée pour '&f{id}&7'."
+
+# ─── /mobstats ────────────────────────────────────────────────────────────────
+stats:
+  # Messages sur une seule ligne
+  no-stats:       "&8[&5Stats&8] &r&7Aucune stat enregistrée pour &f{player}&7."
+  reset-mob:      "&8[&5Stats&8] &r&aStats de &f{player} &apour '&f{mob}&a' réinitialisées."
+  reset-all:      "&8[&5Stats&8] &r&aToutes les stats de &f{player} &aréinitialisées."
+  add-kills:      "&8[&5Stats&8] &r&aAjouté &e{amount} &akill(s) de '&f{mob}&a' pour &f{player}&a."
+  remove-kills:   "&8[&5Stats&8] &r&aSupprimé &e{amount} &akill(s) de '&f{mob}&a' pour &f{player}&a."
+  amount-invalid: "&8[&5Stats&8] &r&cLe montant doit être un entier &f> 0&c."
+  top-empty:      "&8[&5Stats&8] &r&7Aucune donnée disponible."
+  top-global:     "&7(global)"
+  top-filter:     "&7({mob})"
+
+  # ── Affichage des stats d'un joueur (multi-lignes) ────────────────────────
+  # Chaque tiret = une ligne affichée en jeu.
+  # Ajoutez ou supprimez des tirets librement.
+  # Placeholders : {player} dans header, {mob}+{kills} dans entry (répété par mob), {total} dans total.
+  header:
+    - "&8[&5Stats&8] &r&e=== Stats de &f{player} &e==="
+  entry:
+    - "  &7• &f{mob} &7→ &e{kills} &7kill(s)"
+  total:
+    - "  &7Total toutes catégories : &e{total}"
+
+  # ── Classement top (multi-lignes) ─────────────────────────────────────────
+  # {filter} dans top-header. {rank}+{player}+{kills} dans top-entry (répété par joueur).
+  top-header:
+    - "&8[&5Stats&8] &r&e=== Top 10 {filter} &e==="
+  top-entry:
+    - "  &7#{rank} &f{player} &7→ &e{kills} &7kill(s)"
+
+# ─── Notification de kill (multi-lignes) ──────────────────────────────────────
+# Placeholders : {mob} {money} {xp}
+# Ajoutez des tirets pour afficher plusieurs lignes lors d'un kill.
+kill:
+  notification:
+    - "&aVous avez tué {mob} &a→ &6+{money}$ &7| &b+{xp}XP"

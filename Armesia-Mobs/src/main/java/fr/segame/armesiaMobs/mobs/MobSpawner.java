@@ -7,6 +7,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Villager;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.persistence.PersistentDataType;
 
 public class MobSpawner {
 
@@ -18,7 +19,7 @@ public class MobSpawner {
 
     public void spawnMob(Location loc, MobData data, String zoneId) {
 
-        // ── Garde anti-eau : ne jamais spawner dans/sur de l'eau ─────────────
+        // ── Garde anti-eau ─────────────────────────────────────────────────
         if (loc.getBlock().isLiquid()
                 || loc.clone().subtract(0, 1, 0).getBlock().isLiquid()) {
             return;
@@ -40,17 +41,22 @@ public class MobSpawner {
             mob.setHealth(data.getHealth());
         }
 
-        // ── Villageois : vitesse réduite (défaut Minecraft = 0.5, trop rapide) ──
+        // ── Villageois : vitesse réduite ────────────────────────────────────
         if (mob instanceof Villager) {
             var speedAttr = mob.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
             if (speedAttr != null) speedAttr.setBaseValue(0.25);
         }
 
-        mob.setRemoveWhenFarAway(false);   // pas de despawn naturel Minecraft pendant la session
+        mob.setRemoveWhenFarAway(false);
 
-        // Métadonnée légère (session uniquement)
+        // ── Tags d'identification (session + persistant après redémarrage) ──
         mob.setMetadata("customMob", new FixedMetadataValue(ArmesiaMobs.getInstance(), true));
 
+        // PDC — persiste dans les fichiers de monde (survit aux redémarrages)
+        mob.getPersistentDataContainer().set(
+                ArmesiaMobs.MOB_ID_KEY, PersistentDataType.STRING, data.getId());
+        mob.getPersistentDataContainer().set(
+                ArmesiaMobs.ZONE_ID_KEY, PersistentDataType.STRING, zoneId);
 
         mobManager.addInstance(new MobInstance(mob.getUniqueId(), data.getId(), zoneId));
     }
