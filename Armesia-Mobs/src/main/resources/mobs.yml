@@ -1,0 +1,72 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Armesia-Mobs — mobs.yml  (mobs de TEST)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+mobs:
+
+  # ── Mob facile — Zombie de base ───────────────────────────────────────────
+  zombie_faible:
+    name: "§7Zombie Faible"
+    entity-type: ZOMBIE
+    health: 20.0
+    money-min: 5
+    money-max: 15
+    xp-min: 5
+    xp-max: 15
+    loot-table: ""
+
+  # ── Mob intermédiaire — Squelette archer ─────────────────────────────────
+  squelette_archer:
+    name: "§fSqelette Archer"
+    entity-type: SKELETON
+    health: 30.0
+    money-min: 10
+    money-max: 25
+    xp-min: 10
+    xp-max: 25
+    loot-table: ""
+
+  # ── Mob rapide — Araignée ──────────────────────────────────────────────────
+  araignee:
+    name: "§8Araignée"
+    entity-type: SPIDER
+    health: 25.0
+    money-min: 8
+    money-max: 18
+    xp-min: 8
+    xp-max: 18
+    loot-table: ""
+
+  # ── Mob dangereux — Creeper ────────────────────────────────────────────────
+  creeper_mutant:
+    name: "§2Creeper Mutant"
+    entity-type: CREEPER
+    health: 40.0
+    money-min: 30
+    money-max: 60
+    xp-min: 30
+    xp-max: 60
+    loot-table: ""
+
+  # ── Mob élite — Golem de Pierre ────────────────────────────────────────────
+  golem_pierre:
+    name: "§6Golem de Pierre"
+    entity-type: IRON_GOLEM
+    health: 100.0
+    money-min: 80
+    money-max: 150
+    xp-min: 80
+    xp-max: 150
+    loot-table: ""
+
+  # ── Mob boss — Enderman ────────────────────────────────────────────────────
+  enderman_corrompu:
+    name: "§5Enderman Corrompu"
+    entity-type: ENDERMAN
+    health: 60.0
+    money-min: 50
+    money-max: 100
+    xp-min: 50
+    xp-max: 100
+    loot-table: ""
+

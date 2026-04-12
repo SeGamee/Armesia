@@ -102,6 +102,15 @@ near:
   default-radius: 100
   max-radius: 500
 
+# ── Chat ─────────────────────────────────────────────────────────────────────
+chat:
+  # Délai en secondes entre deux messages (0 = désactivé)
+  cooldown: 3
+  # Permission qui bypass le cooldown
+  cooldown-bypass: "armesia.chat.nocooldown"
+  # Message envoyé quand le cooldown est actif ({remaining} = secondes restantes)
+  message: "§cVous devez attendre §e{remaining}s §cavant de reparler."
+
 # ── Messages généraux ─────────────────────────────────────────────────────────
 general:
   no-permission:    "§cVous n'avez pas la permission."

@@ -84,6 +84,7 @@ zone:
 stats:
   # Messages sur une seule ligne
   no-stats:       "&8[&5Stats&8] &r&7Aucune stat enregistrée pour &f{player}&7."
+  never-joined:   "&8[&5Stats&8] &r&cLe joueur &f{player} &cn'a jamais rejoint ce serveur."
   reset-mob:      "&8[&5Stats&8] &r&aStats de &f{player} &apour '&f{mob}&a' réinitialisées."
   reset-all:      "&8[&5Stats&8] &r&aToutes les stats de &f{player} &aréinitialisées."
   add-kills:      "&8[&5Stats&8] &r&aAjouté &e{amount} &akill(s) de '&f{mob}&a' pour &f{player}&a."

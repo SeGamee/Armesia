@@ -12,3 +12,12 @@
 # Liste des mondes à charger automatiquement au démarrage du serveur.
 # Remplie automatiquement par /world create — ne pas modifier manuellement.
 worlds: []
+
+# Zones de map — remplies automatiquement par /mapzone set <nom>.
+# Ne pas modifier manuellement.
+
+# Portails — remplis automatiquement par /portal set <nom> <zone>.
+# Chaque portail est une région 3D. Quand un joueur la traverse,
+# il est téléporté en parachute dans la zone cible.
+# Ne pas modifier manuellement.
+

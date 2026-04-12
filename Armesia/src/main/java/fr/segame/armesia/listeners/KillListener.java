@@ -47,6 +47,9 @@ public class KillListener implements Listener {
         // Reset streak victime
         statsManager.setKillstreak(victimUUID, 0);
 
+        // Refresh scoreboard victime
+        Main.updatePlayerScoreboard(victimUUID);
+
         if (killer == null) return;
 
         UUID killerUUID = killer.getUniqueId();
@@ -83,6 +86,9 @@ public class KillListener implements Listener {
         if (streak > statsManager.getBestKillstreak(killerUUID)) {
             statsManager.setBestKillstreak(killerUUID, streak);
         }
+
+        // Refresh scoreboard tueur
+        Main.updatePlayerScoreboard(killerUUID);
 
         // ===== KILL CONFIG =====
         ConfigurationSection killSection = plugin.getConfig().getConfigurationSection("kill");

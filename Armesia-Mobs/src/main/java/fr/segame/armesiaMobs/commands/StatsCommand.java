@@ -57,6 +57,9 @@ public class StatsCommand implements CommandExecutor, TabCompleter {
                 }
                 if (args.length < 2) { sender.sendMessage(msg().get("common.args-missing")); return true; }
                 OfflinePlayer target = getOfflinePlayer(args[1]);
+                if (!target.hasPlayedBefore()) {
+                    sender.sendMessage(msg().get("stats.never-joined", "player", args[1])); return true;
+                }
                 if (args.length >= 3) {
                     statsManager.resetStats(target.getUniqueId(), args[2]);
                     sender.sendMessage(msg().get("stats.reset-mob", "player", args[1], "mob", args[2]));
@@ -76,6 +79,9 @@ public class StatsCommand implements CommandExecutor, TabCompleter {
                 int amount = parsePositiveInt(args[3]);
                 if (amount <= 0) { sender.sendMessage(msg().get("stats.amount-invalid")); return true; }
                 OfflinePlayer target = getOfflinePlayer(args[1]);
+                if (!target.hasPlayedBefore()) {
+                    sender.sendMessage(msg().get("stats.never-joined", "player", args[1])); return true;
+                }
                 statsManager.addKills(target.getUniqueId(), args[2], amount);
                 statsManager.save();
                 sender.sendMessage(msg().get("stats.add-kills",
@@ -91,6 +97,9 @@ public class StatsCommand implements CommandExecutor, TabCompleter {
                 int amount = parsePositiveInt(args[3]);
                 if (amount <= 0) { sender.sendMessage(msg().get("stats.amount-invalid")); return true; }
                 OfflinePlayer target = getOfflinePlayer(args[1]);
+                if (!target.hasPlayedBefore()) {
+                    sender.sendMessage(msg().get("stats.never-joined", "player", args[1])); return true;
+                }
                 statsManager.removeKills(target.getUniqueId(), args[2], amount);
                 statsManager.save();
                 sender.sendMessage(msg().get("stats.remove-kills",
@@ -126,6 +135,9 @@ public class StatsCommand implements CommandExecutor, TabCompleter {
                     sender.sendMessage(msg().get("common.no-permission")); return true;
                 }
                 OfflinePlayer target = getOfflinePlayer(args[0]);
+                if (!target.hasPlayedBefore() && !isSelf) {
+                    sender.sendMessage(msg().get("stats.never-joined", "player", args[0])); return true;
+                }
                 showStats(sender, target.getUniqueId(), args[0]);
             }
         }
@@ -140,10 +152,17 @@ public class StatsCommand implements CommandExecutor, TabCompleter {
         msg().getLines("stats.header", "player", name).forEach(s::sendMessage);
         ps.entrySet().stream()
                 .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
-                .forEach(e -> msg().getLines("stats.entry", "mob", e.getKey(), "kills", e.getValue())
+                .forEach(e -> msg().getLines("stats.entry",
+                                "mob", getMobDisplayName(e.getKey()), "kills", e.getValue())
                                    .forEach(s::sendMessage));
         int total = ps.values().stream().mapToInt(Integer::intValue).sum();
         msg().getLines("stats.total", "total", total).forEach(s::sendMessage);
+    }
+
+    /** Retourne le nom d'affichage du mob (fallback sur l'ID si non trouvé). */
+    private String getMobDisplayName(String mobId) {
+        fr.segame.armesiaMobs.mobs.MobData mob = mobManager.getMob(mobId);
+        return (mob != null) ? mob.getName() : mobId;
     }
 
     // ─── Tab Completion ───────────────────────────────────────────────────────

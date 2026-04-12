@@ -17,6 +17,29 @@ commands:
     description: Définir le point de spawn
     usage: /setspawn
     permission: armesia.world.setspawn
+  mapzone:
+    description: Gestion des zones de map (outil de sélection + création)
+    usage: /mapzone <wand|set|list|delete|info> [args...]
+    permission: armesia.world.mapzone
+  portal:
+    description: Gestion des portails de map
+    usage: /portal <wand|set|list|delete|info> [args...]
+    permission: armesia.world.portal
+
+permissions:
+  armesia.world.use:
+    description: Gérer les mondes
+    default: op
+  armesia.world.setspawn:
+    description: Définir le spawn global
+    default: op
+  armesia.world.mapzone:
+    description: Créer et gérer les zones de map
+    default: op
+  armesia.world.portal:
+    description: Créer et gérer les portails de map
+    default: op
+
 
 
 

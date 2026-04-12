@@ -359,11 +359,4 @@ public class ReloadListener implements Listener {
 
         return null;
     }
-
-    @EventHandler
-    public void onInteract(PlayerInteractEvent event) {
-        Player player = event.getPlayer();
-
-        player.setCooldown(Material.CARROT_ON_A_STICK, 100);
-    }
 }

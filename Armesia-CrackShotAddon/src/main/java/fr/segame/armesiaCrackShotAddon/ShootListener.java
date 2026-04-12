@@ -26,27 +26,40 @@ public class ShootListener implements Listener {
         String weapon = csUtility.getWeaponTitle(item);
         if (weapon == null) return;
 
-        // 🔥 Récup config de l’arme
         ConfigurationSection section = Main.getInstance()
                 .getReloadListener()
                 .getWeaponConfig(weapon);
 
         if (section == null) return;
 
-        // 🔥 Vérifie CustomParticles
-        if (!section.contains("CustomParticles")) return;
-
         ConfigurationSection cp = section.getConfigurationSection("CustomParticles");
-        if (cp == null) return;
+        if (cp != null && cp.getBoolean("Enabled", false)) {
 
-        if (!cp.getBoolean("Enabled", false)) return;
+            boolean followProjectile = cp.getBoolean("Follow_Projectile", false);
 
-        // 🔥 Position + direction
-        Location start = player.getEyeLocation();
-        Vector direction = start.getDirection().normalize();
+            if (followProjectile && e.getProjectile() != null) {
+                if (e.getProjectile() instanceof org.bukkit.entity.Projectile projectile) {
+                    Main.getInstance().getTrailManager()
+                            .startProjectileTrail(projectile, cp);
+                }
+            } else {
+                Location start = player.getEyeLocation();
+                Vector direction = start.getDirection().normalize();
 
-        // 🔥 Lance le trail avec la config directe
-        Main.getInstance().getTrailManager()
-                .startEnergyTrail(player, start, direction, cp);
+                Main.getInstance().getTrailManager()
+                        .startEnergyTrail(player, start, direction, cp);
+            }
+        }
+
+        // 🔥 IMPACT SYSTEM
+        ConfigurationSection impact = section.getConfigurationSection("Impact");
+
+        if (impact != null && impact.getBoolean("Enabled", false)
+                && e.getProjectile() != null
+                && e.getProjectile() instanceof org.bukkit.entity.Projectile projectile) {
+
+            Main.getInstance().getImpactManager()
+                    .trackProjectile(projectile, impact);
+        }
     }
 }

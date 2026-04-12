@@ -1,0 +1,451 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Armesia-Mobs — zones.yml  (zones de TEST — v2)
+#
+# AUCUNE condition de spawn par météo/heure : tous les spawns sont ALWAYS.
+#
+# ⚠ POSITIONS : toutes les zones ont pos1/pos2 à 0,0,0.
+#   En jeu : /zone pos1 <id>  puis  /zone pos2 <id>
+#
+# ─── COMMENT LIRE LES CHIFFRES ────────────────────────────────────────────────
+#   spawn-interval   : toutes les N secondes, le système tente un spawn par joueur
+#   spawn-chance     : probabilité (0.0–1.0) qu'un spawn ait réellement lieu
+#   target-min/max   : nombre de mobs voulu AUTOUR d'un joueur
+#   spawn-boost-*    : quand il manque des mobs, count supplémentaires en un tick
+#   max              : plafond global de mobs dans toute la zone (tous joueurs)
+#   despawn-distance : distance (blocs) au-delà de laquelle un mob peut disparaître
+# ═══════════════════════════════════════════════════════════════════════════════
+
+zones:
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # ZONE 1 — test_solo_petite
+  # Usage : tester la densité de base pour 1 joueur seul dans un petit espace.
+  #
+  # ─ SEUL ─
+  #   • Cible : 2–3 zombies autour du joueur (rayon 8–15 blocs)
+  #   • Temps pour atteindre la cible depuis 0 mob :
+  #       - Premier tick (3 s) : zone vide → boost tier1 → 2 zombies spawnés d'un coup
+  #       - Deuxième tick (6 s) : si encore < 1,5 mob → 1 de plus
+  #       → Zone pleine (2–3 mobs) en 3–6 secondes
+  #   • Régime permanent : dès qu'un zombie est tué, il est remplacé en 3 s
+  #   • Cap global : 5 mobs maximum dans la zone
+  #
+  # ─ À PLUSIEURS ─
+  #   • Chaque joueur présent attire ses propres tentatives de spawn
+  #   • 2 joueurs → jusqu'à 4–6 tentatives / 3 s → plafonné à 5 mobs très vite
+  #   • En pratique : 2 joueurs = cap 5 atteint en ~6 s, mobs partagés entre eux
+  # ─────────────────────────────────────────────────────────────────────────────
+  test_solo_petite:
+    world: world
+    pos1: { x: 0, y: 0, z: 0 }
+    pos2: { x: 0, y: 0, z: 0 }
+    mobs:
+      - zombie_faible
+    max: 5
+    priority: 0
+    inherit-mobs: false
+    override-mobs: false
+    spawn-radius-min: 8
+    spawn-radius-max: 15
+    target-min: 2
+    target-max: 3
+    spawn-interval: 3
+    spawn-chance: 1.0
+    spawn-boost-ratio1: 0.25
+    spawn-boost-ratio2: 0.50
+    spawn-boost-ratio3: 0.75
+    spawn-boost-multiplier1: 4.0
+    spawn-boost-multiplier2: 2.5
+    spawn-boost-multiplier3: 1.5
+    spawn-boost-count1: 2
+    spawn-boost-count2: 1
+    spawn-boost-count3: 1
+    despawn-distance: 60
+    despawn-check-interval: 3
+    despawn-chance-close: 0.0
+    despawn-chance-mid: 0.3
+    despawn-chance-far: 0.6
+    despawn-chance-outer: 1.0
+    despawn-ratio1: 0.50
+    despawn-ratio2: 0.75
+    despawn-ratio3: 1.00
+    boundary-tolerance: 0.0
+    bounce-strength: 0.4
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # ZONE 2 — test_groupe_grande
+  # Usage : tester le comportement multi-joueurs sur une grande surface.
+  # Mix zombies (x2) + squelettes (x1) — rayon de spawn élargi.
+  #
+  # ─ SEUL ─
+  #   • Cible : 10–15 mobs autour du joueur (rayon 30–60 blocs)
+  #   • Temps depuis 0 mob :
+  #       - 5 s  : boost tier1 → 4 mobs d'un coup
+  #       - 10 s : 2 de plus → ~6 mobs
+  #       - 20 s : ~10 mobs (stabilisation basse)
+  #       - 40 s : ~12–15 mobs (cible atteinte)
+  #   • Régime permanent : 1–2 mobs spawnés toutes les 5 s pour compenser les morts
+  #   • Cap global : 40 mobs (non atteint à 1 joueur)
+  #
+  # ─ À 3 JOUEURS ─
+  #   • 3 × (10–15) = 30–45 cibles → plafonné à 40 mobs
+  #   • En ~30–40 s, les 40 mobs sont présents et répartis sur la zone
+  #   • Intensité combat : chaque joueur fait face à ~12–15 mobs simultanément
+  #
+  # ─ À 5 JOUEURS ─
+  #   • Cap 40 atteint très vite (~20 s) — chaque joueur ne voit "que" 8–10 mobs
+  #   • Spawn ralenti automatiquement (cap atteint) → pas d'explosion de lag
+  # ─────────────────────────────────────────────────────────────────────────────
+  test_groupe_grande:
+    world: world
+    pos1: { x: 0, y: 0, z: 0 }
+    pos2: { x: 0, y: 0, z: 0 }
+    mobs:
+      - zombie_faible
+      - squelette_archer
+    mob-weights:
+      zombie_faible: 2.0
+      squelette_archer: 1.0
+    max: 40
+    priority: 0
+    inherit-mobs: false
+    override-mobs: false
+    spawn-radius-min: 30
+    spawn-radius-max: 60
+    target-min: 10
+    target-max: 15
+    spawn-interval: 5
+    spawn-chance: 1.0
+    spawn-boost-ratio1: 0.25
+    spawn-boost-ratio2: 0.50
+    spawn-boost-ratio3: 0.75
+    spawn-boost-multiplier1: 3.0
+    spawn-boost-multiplier2: 2.0
+    spawn-boost-multiplier3: 1.5
+    spawn-boost-count1: 4
+    spawn-boost-count2: 2
+    spawn-boost-count3: 1
+    despawn-distance: 150
+    despawn-check-interval: 5
+    despawn-chance-close: 0.0
+    despawn-chance-mid: 0.2
+    despawn-chance-far: 0.4
+    despawn-chance-outer: 0.7
+    despawn-ratio1: 0.50
+    despawn-ratio2: 0.75
+    despawn-ratio3: 1.00
+    boundary-tolerance: 5.0
+    bounce-strength: 0.5
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # ZONE 3 — test_mobs_durs
+  # Usage : tester des mobs élites (endermen + creepers), spawn agressif.
+  # Anciennement "nuit uniquement" — maintenant toujours actif.
+  #
+  # ─ SEUL ─
+  #   • Cible : 4–8 mobs (mix endermen 60% / creepers 40%)
+  #   • spawn-chance 85% → en moyenne 1 tentative réussie toutes les ~4,7 s
+  #   • Depuis 0 mob :
+  #       - 4 s  : boost tier1 → 4 mobs d'un coup
+  #       - 8 s  : 3 de plus → ~7 mobs (cible atteinte)
+  #   • Régime : remplacement en ~5–10 s après chaque mort
+  #   • Cap : 20 mobs
+  #
+  # ─ À 2–3 JOUEURS ─
+  #   • 2 joueurs → cible 8–16, plafonné à 20 mobs
+  #   • Cap 20 atteint en ~15 s → mobs très denses
+  #   • Combat intense : endermen téléportent, creepers explosent → haute difficulté
+  # ─────────────────────────────────────────────────────────────────────────────
+  test_mobs_durs:
+    world: world
+    pos1: { x: 0, y: 0, z: 0 }
+    pos2: { x: 0, y: 0, z: 0 }
+    mobs:
+      - enderman_corrompu
+      - creeper_mutant
+    mob-weights:
+      enderman_corrompu: 1.5
+      creeper_mutant: 1.0
+    max: 20
+    priority: 1
+    inherit-mobs: false
+    override-mobs: false
+    spawn-radius-min: 15
+    spawn-radius-max: 35
+    target-min: 4
+    target-max: 8
+    spawn-interval: 4
+    spawn-chance: 0.85
+    spawn-boost-ratio1: 0.25
+    spawn-boost-ratio2: 0.50
+    spawn-boost-ratio3: 0.75
+    spawn-boost-multiplier1: 5.0
+    spawn-boost-multiplier2: 3.0
+    spawn-boost-multiplier3: 2.0
+    spawn-boost-count1: 4
+    spawn-boost-count2: 3
+    spawn-boost-count3: 2
+    despawn-distance: 120
+    despawn-check-interval: 4
+    despawn-chance-close: 0.0
+    despawn-chance-mid: 0.3
+    despawn-chance-far: 0.5
+    despawn-chance-outer: 0.9
+    despawn-ratio1: 0.50
+    despawn-ratio2: 0.75
+    despawn-ratio3: 1.00
+    boundary-tolerance: 2.0
+    bounce-strength: 0.6
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # ZONE 4 — test_spawn_lent
+  # Usage : tester une zone à faible densité. spawn-chance 50% = simulation d'une
+  # zone où le spawn rate est volontairement bridé.
+  # Anciennement "jour uniquement" — maintenant toujours actif.
+  #
+  # ─ SEUL ─
+  #   • Cible : 2–4 mobs (zombies 75% / araignées 25%)
+  #   • spawn-chance 50% + interval 8 s → spawn réussi en moyenne toutes les 16 s
+  #   • Depuis 0 mob :
+  #       - 8 s  : 50% de chance → peut ne rien spawner
+  #       - 16 s : en moyenne 1 mob apparu (avec boost)
+  #       - 48 s : 2–3 mobs (stabilisation)
+  #       - 80 s : cible pleine (2–4 mobs)
+  #   • Idéal pour mesurer que spawn-chance divise effectivement par 2 la vitesse
+  #   • Despawn rapide : si le joueur s'éloigne de 32 blocs (50% de despawnDistance),
+  #     80% de chance de disparition à chaque check (3 s)
+  #
+  # ─ À PLUSIEURS ─
+  #   • Chaque joueur tente son spawn indépendamment : 2 joueurs = 2× les tentatives
+  #   • 2 joueurs → cible effective 4–8, plafonné à 10
+  #   • Cap 10 atteint en ~60–80 s (lent intentionnellement)
+  # ─────────────────────────────────────────────────────────────────────────────
+  test_spawn_lent:
+    world: world
+    pos1: { x: 0, y: 0, z: 0 }
+    pos2: { x: 0, y: 0, z: 0 }
+    mobs:
+      - zombie_faible
+      - araignee
+    mob-weights:
+      zombie_faible: 3.0
+      araignee: 1.0
+    max: 10
+    priority: 0
+    inherit-mobs: false
+    override-mobs: false
+    spawn-radius-min: 10
+    spawn-radius-max: 25
+    target-min: 2
+    target-max: 4
+    spawn-interval: 8
+    spawn-chance: 0.50
+    spawn-boost-ratio1: 0.25
+    spawn-boost-ratio2: 0.50
+    spawn-boost-ratio3: 0.75
+    spawn-boost-multiplier1: 2.0
+    spawn-boost-multiplier2: 1.5
+    spawn-boost-multiplier3: 1.2
+    spawn-boost-count1: 1
+    spawn-boost-count2: 1
+    spawn-boost-count3: 1
+    despawn-distance: 80
+    despawn-check-interval: 3
+    despawn-chance-close: 0.0
+    despawn-chance-mid: 0.5
+    despawn-chance-far: 0.8
+    despawn-chance-outer: 1.0
+    despawn-ratio1: 0.40
+    despawn-ratio2: 0.70
+    despawn-ratio3: 1.00
+    boundary-tolerance: 3.0
+    bounce-strength: 0.3
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # ZONE 5 — test_poids_multimobs
+  # Usage : valider que les poids de spawn influencent la sélection du mob.
+  # 4 types de mobs avec poids très déséquilibrés.
+  #
+  # ─ Répartition théorique (poids : zombie×5 / squelette×2 / araignée×1.5 / golem×0.5) ─
+  #   Total poids = 9.0
+  #   zombie_faible    → 5/9 = ~55% des spawns
+  #   squelette_archer → 2/9 = ~22% des spawns
+  #   araignee         → 1.5/9 = ~17% des spawns
+  #   golem_pierre     → 0.5/9 = ~6% des spawns  (rare !)
+  #
+  # ─ SEUL (cible 6–10 mobs, interval 5 s) ─
+  #   • Depuis 0 mob : 3–4 mobs en ~5 s (boost tier1 count 3)
+  #   • Stabilisation (6–10 mobs) en ~20–30 s
+  #   • Sur 10 mobs : attendu ~5–6 zombies, ~2 squelettes, ~1–2 araignées, 0–1 golem
+  #   • Le golem apparaît en moyenne 1 fois toutes les ~50 s de combat soutenu
+  #
+  # ─ À PLUSIEURS ─
+  #   • 3 joueurs → cible 18–30 → plafonné à 25
+  #   • Cap 25 atteint en ~25 s
+  # ─────────────────────────────────────────────────────────────────────────────
+  test_poids_multimobs:
+    world: world
+    pos1: { x: 0, y: 0, z: 0 }
+    pos2: { x: 0, y: 0, z: 0 }
+    mobs:
+      - zombie_faible
+      - squelette_archer
+      - araignee
+      - golem_pierre
+    mob-weights:
+      zombie_faible: 5.0
+      squelette_archer: 2.0
+      araignee: 1.5
+      golem_pierre: 0.5
+    max: 25
+    priority: 0
+    inherit-mobs: false
+    override-mobs: false
+    spawn-radius-min: 20
+    spawn-radius-max: 40
+    target-min: 6
+    target-max: 10
+    spawn-interval: 5
+    spawn-chance: 1.0
+    spawn-boost-ratio1: 0.25
+    spawn-boost-ratio2: 0.50
+    spawn-boost-ratio3: 0.75
+    spawn-boost-multiplier1: 3.0
+    spawn-boost-multiplier2: 2.0
+    spawn-boost-multiplier3: 1.5
+    spawn-boost-count1: 3
+    spawn-boost-count2: 2
+    spawn-boost-count3: 1
+    despawn-distance: 130
+    despawn-check-interval: 5
+    despawn-chance-close: 0.0
+    despawn-chance-mid: 0.2
+    despawn-chance-far: 0.4
+    despawn-chance-outer: 0.7
+    despawn-ratio1: 0.50
+    despawn-ratio2: 0.75
+    despawn-ratio3: 1.00
+    boundary-tolerance: 0.0
+    bounce-strength: 0.5
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # ZONE 6 — test_frontiere_stricte
+  # Usage : vérifier que les mobs restent confinés dans la zone.
+  # bounce-strength 1.2 = rebond très violent. boundary-tolerance 0 = dès le bord.
+  #
+  # ─ SEUL ─
+  #   • Cible : 3–5 mobs (zombies 75% / golems 25%), rayon spawn 5–12 blocs
+  #   • Depuis 0 mob : 2 mobs en 4 s (boost tier1 count 2), 3–5 mobs en ~8–12 s
+  #   • Les mobs qui franchissent le bord de la zone sont violemment repoussés
+  #     → tester en se plaçant près du bord : les mobs ne doivent pas sortir
+  #   • Cap : 8 mobs — zone intentionnellement petite pour observer le bounce
+  #
+  # ─ COMPORTEMENT ATTENDU ─
+  #   - Zombie près du bord : rebond visible (~1,2 blocs de recul)
+  #   - Golem (plus lourd) : même rebond — tester que sa masse ne contourne pas
+  #   - Si un mob "saute" la zone : bug bounce à corriger
+  # ─────────────────────────────────────────────────────────────────────────────
+  test_frontiere_stricte:
+    world: world
+    pos1: { x: 0, y: 0, z: 0 }
+    pos2: { x: 0, y: 0, z: 0 }
+    mobs:
+      - zombie_faible
+      - golem_pierre
+    mob-weights:
+      zombie_faible: 3.0
+      golem_pierre: 1.0
+    max: 8
+    priority: 0
+    inherit-mobs: false
+    override-mobs: false
+    spawn-radius-min: 5
+    spawn-radius-max: 12
+    target-min: 3
+    target-max: 5
+    spawn-interval: 4
+    spawn-chance: 1.0
+    spawn-boost-ratio1: 0.25
+    spawn-boost-ratio2: 0.50
+    spawn-boost-ratio3: 0.75
+    spawn-boost-multiplier1: 3.0
+    spawn-boost-multiplier2: 2.0
+    spawn-boost-multiplier3: 1.5
+    spawn-boost-count1: 2
+    spawn-boost-count2: 1
+    spawn-boost-count3: 1
+    despawn-distance: 80
+    despawn-check-interval: 4
+    despawn-chance-close: 0.0
+    despawn-chance-mid: 0.2
+    despawn-chance-far: 0.5
+    despawn-chance-outer: 0.9
+    despawn-ratio1: 0.50
+    despawn-ratio2: 0.75
+    despawn-ratio3: 1.00
+    boundary-tolerance: 0.0
+    bounce-strength: 1.2
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # ZONE 7 — test_despawn_agressif
+  # Usage : vérifier que la zone se vide quand personne n'est là.
+  # despawn-distance 30 blocs = zone ultra-courte portée.
+  #
+  # ─ SEUL ─
+  #   • Cible : 4–8 mobs (zombies + araignées, 50/50), rayon 10–25 blocs
+  #   • Depuis 0 mob : 3 mobs en ~4 s (boost tier1), 4–8 mobs en ~15 s
+  #   • DESPAWN :
+  #       - Joueur à 0–15 blocs   (< 50% de 30) : 0% de chance — mobs gardés
+  #       - Joueur à 15–22 blocs  (50–75% de 30) : 60% de chance toutes les 2 s
+  #         → un mob à 18 blocs a 60% de chance de despawner toutes les 2 s
+  #         → en moyenne, disparaît en ~3–4 s
+  #       - Joueur à 22–30 blocs  (75–100%) : 85% → disparaît en ~2 s
+  #       - Joueur à >30 blocs    (outer)   : 100% → disparaît au prochain check (2 s)
+  #   • Si le joueur quitte la zone : TOUS les mobs sont retirés en ~2–4 s
+  #   • Le joueur peut revenir : la zone se repeuple en ~4–8 s
+  #
+  # ─ À PLUSIEURS ─
+  #   • Les mobs ne despawnent que si TOUS les joueurs sont loin
+  #   • 2 joueurs proches = mobs maintenus tant que l'un d'eux est là
+  # ─────────────────────────────────────────────────────────────────────────────
+  test_despawn_agressif:
+    world: world
+    pos1: { x: 0, y: 0, z: 0 }
+    pos2: { x: 0, y: 0, z: 0 }
+    mobs:
+      - zombie_faible
+      - araignee
+    mob-weights:
+      zombie_faible: 1.0
+      araignee: 1.0
+    max: 15
+    priority: 0
+    inherit-mobs: false
+    override-mobs: false
+    spawn-radius-min: 10
+    spawn-radius-max: 25
+    target-min: 4
+    target-max: 8
+    spawn-interval: 4
+    spawn-chance: 1.0
+    spawn-boost-ratio1: 0.25
+    spawn-boost-ratio2: 0.50
+    spawn-boost-ratio3: 0.75
+    spawn-boost-multiplier1: 4.0
+    spawn-boost-multiplier2: 2.5
+    spawn-boost-multiplier3: 1.5
+    spawn-boost-count1: 3
+    spawn-boost-count2: 2
+    spawn-boost-count3: 1
+    despawn-distance: 30
+    despawn-check-interval: 2
+    despawn-chance-close: 0.0
+    despawn-chance-mid: 0.6
+    despawn-chance-far: 0.85
+    despawn-chance-outer: 1.0
+    despawn-ratio1: 0.50
+    despawn-ratio2: 0.75
+    despawn-ratio3: 1.00
+    boundary-tolerance: 2.0
+    bounce-strength: 0.5
+

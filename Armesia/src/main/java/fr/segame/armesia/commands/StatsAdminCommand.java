@@ -107,6 +107,9 @@ public class StatsAdminCommand implements CommandExecutor {
             return true;
         }
 
+        // Refresh immédiat du scoreboard si le joueur est connecté
+        fr.segame.armesia.Main.updatePlayerScoreboard(target.getUniqueId());
+
         sender.sendMessage("§a" + statName + " de §e" + target.getName() + " §amodifié avec succès.");
         return true;
     }

@@ -4,12 +4,14 @@ import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
-import org.bukkit.entity.Player;
 
 public class TrailManager {
 
+    // 🔥 ENTRY POINT
     public void startEnergyTrail(Player player, Location start, Vector direction, ConfigurationSection sec) {
 
         if (sec == null) return;
@@ -23,6 +25,30 @@ public class TrailManager {
         }
     }
 
+    // 🔥 TRAIL QUI SUIT LE PROJECTILE
+    public void startProjectileTrail(Projectile projectile, ConfigurationSection sec) {
+
+        new BukkitRunnable() {
+
+            @Override
+            public void run() {
+
+                if (projectile.isDead() || !projectile.isValid()) {
+                    cancel();
+                    return;
+                }
+
+                Location loc = projectile.getLocation();
+                Vector dir = projectile.getVelocity().normalize();
+
+                startStaticTrail(loc, dir, sec);
+
+            }
+
+        }.runTaskTimer(Main.getInstance(), 0L, 1L);
+    }
+
+    // 🔥 TRAIL QUI SUIT LE JOUEUR
     private void startFollowingTrail(Player player, ConfigurationSection sec) {
 
         int duration = sec.getInt("Duration", 10);
@@ -50,7 +76,21 @@ public class TrailManager {
         }.runTaskTimer(Main.getInstance(), 0L, 1L);
     }
 
+    // 🔥 TRAIL PRINCIPAL
     private void startStaticTrail(Location start, Vector direction, ConfigurationSection sec) {
+
+        boolean animated = sec.getBoolean("Animated", false);
+
+        if (animated) {
+            animateTrail(start, direction, sec);
+            return;
+        }
+
+        spawnFullTrail(start, direction, sec);
+    }
+
+    // 🔥 VERSION STATIQUE (TON SYSTÈME ACTUEL)
+    private void spawnFullTrail(Location start, Vector direction, ConfigurationSection sec) {
 
         Particle particle = Particle.valueOf(sec.getString("Trail", "REDSTONE"));
 
@@ -130,6 +170,44 @@ public class TrailManager {
         }
     }
 
+    // 🔥 VERSION ANIMÉE
+    private void animateTrail(Location start, Vector direction, ConfigurationSection sec) {
+
+        Particle particle = Particle.valueOf(sec.getString("Trail", "REDSTONE"));
+
+        String[] rgb = sec.getString("Trail_Color", "255-255-255").split("-");
+        Color color = Color.fromRGB(
+                Integer.parseInt(rgb[0]),
+                Integer.parseInt(rgb[1]),
+                Integer.parseInt(rgb[2])
+        );
+
+        double spacing = sec.getDouble("Space_Between_Trails", 0.2);
+        double maxDistance = sec.getDouble("Distance", 30);
+
+        new BukkitRunnable() {
+
+            double d = 0;
+
+            @Override
+            public void run() {
+
+                if (d > maxDistance) {
+                    cancel();
+                    return;
+                }
+
+                Location loc = start.clone().add(direction.clone().multiply(d));
+
+                spawnParticle(loc, particle, color);
+
+                d += spacing;
+            }
+
+        }.runTaskTimer(Main.getInstance(), 0L, 1L);
+    }
+
+    // 🔥 SPAWN PARTICLE
     private void spawnParticle(Location loc, Particle particle, Color color) {
 
         if (particle == Particle.REDSTONE && color != null) {

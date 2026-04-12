@@ -63,27 +63,39 @@ public class TabManager {
                 : getLastChatColor(nametagPrefix);
 
         String teamName = String.format("lvl_%04d", 9999 - level);
-
-        Scoreboard board = Bukkit.getScoreboardManager().getMainScoreboard();
-
         String entry = player.getName();
 
-        // ❌ nettoyage ancienne team
+        // ── Appliquer la team sur le scoreboard principal ET sur tous les
+        //    scoreboards custom des joueurs connectés (Armesia-Scoreboard).
+        //    Sans ça, les joueurs avec un scoreboard custom ne voient pas les
+        //    préfixes au-dessus de la tête.
+        applyTeamToBoard(Bukkit.getScoreboardManager().getMainScoreboard(),
+                entry, teamName, nametagPrefix, nameColor);
+        for (Player viewer : Bukkit.getOnlinePlayers()) {
+            Scoreboard viewerBoard = viewer.getScoreboard();
+            // Évite de re-traiter le main scoreboard deux fois
+            if (!viewerBoard.equals(Bukkit.getScoreboardManager().getMainScoreboard())) {
+                applyTeamToBoard(viewerBoard, entry, teamName, nametagPrefix, nameColor);
+            }
+        }
+    }
+
+    /** Enregistre/met à jour la team sur un scoreboard donné. */
+    private void applyTeamToBoard(Scoreboard board, String entry,
+                                  String teamName, String prefix, ChatColor color) {
+        // Retire l'entrée des anciennes teams lvl_
         for (Team t : board.getTeams()) {
             if (t.getName().startsWith("lvl_") && t.hasEntry(entry)) {
                 t.removeEntry(entry);
             }
         }
-
-        // ✅ créer / récupérer team
         Team team = board.getTeam(teamName);
         if (team == null) {
             team = board.registerNewTeam(teamName);
         }
-
-        team.setPrefix(nametagPrefix);
+        team.setPrefix(prefix);
         team.setSuffix("");
-        team.setColor(nameColor);
+        team.setColor(color);
         team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.ALWAYS);
 
         team.addEntry(entry);
