@@ -52,7 +52,10 @@ public class PlayersListeners implements Listener {
         if (VanishManager.isVanished(joueur.getUniqueId())) {
             event.joinMessage(null);
         } else {
-            event.joinMessage(Component.text("§7[§a+§7] ").append(joueur.displayName()));
+            event.joinMessage(
+                    Component.text("§7[§a+§7] ")
+                            .append(joueur.displayName().color(NamedTextColor.GRAY))
+            );
         }
     }
 
@@ -72,7 +75,10 @@ public class PlayersListeners implements Listener {
             return;
         }
 
-        event.quitMessage(Component.text("§7[§c-§7] ").append(joueur.displayName()));
+        event.quitMessage(
+                Component.text("§7[§c-§7] ")
+                        .append(joueur.displayName().color(NamedTextColor.GRAY))
+        );
     }
 
     @EventHandler

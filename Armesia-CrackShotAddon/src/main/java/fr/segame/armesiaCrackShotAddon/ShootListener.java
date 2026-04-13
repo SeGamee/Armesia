@@ -8,7 +8,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.util.Vector;
 
 public class ShootListener implements Listener {
 
@@ -32,34 +31,34 @@ public class ShootListener implements Listener {
 
         if (section == null) return;
 
-        ConfigurationSection cp = section.getConfigurationSection("CustomParticles");
-        if (cp != null && cp.getBoolean("Enabled", false)) {
+        // 🔥 ZONES AU TIR
+        ConfigurationSection zones = section.getConfigurationSection("Zones");
 
-            boolean followProjectile = cp.getBoolean("Follow_Projectile", false);
+        if (zones != null) {
+            for (String key : zones.getKeys(false)) {
 
-            if (followProjectile && e.getProjectile() != null) {
-                if (e.getProjectile() instanceof org.bukkit.entity.Projectile projectile) {
-                    Main.getInstance().getTrailManager()
-                            .startProjectileTrail(projectile, cp);
+                ConfigurationSection zone = zones.getConfigurationSection(key);
+                if (zone == null || !zone.getBoolean("Enabled", false)) continue;
+
+                String trigger = zone.getString("Trigger", "IMPACT");
+
+                if (trigger.equalsIgnoreCase("SHOOT")) {
+
+                    Location loc = ZoneUtils.resolveLocation(zone, player, null);
+
+                    Main.getInstance().getZoneManager()
+                            .createZone(loc, zone);
                 }
-            } else {
-                Location start = player.getEyeLocation();
-                Vector direction = start.getDirection().normalize();
-
-                Main.getInstance().getTrailManager()
-                        .startEnergyTrail(player, start, direction, cp);
             }
         }
 
-        // 🔥 IMPACT SYSTEM
-        ConfigurationSection impact = section.getConfigurationSection("Impact");
-
-        if (impact != null && impact.getBoolean("Enabled", false)
+        // 🔥 ZONES À L'IMPACT
+        if (zones != null
                 && e.getProjectile() != null
                 && e.getProjectile() instanceof org.bukkit.entity.Projectile projectile) {
 
             Main.getInstance().getImpactManager()
-                    .trackProjectile(projectile, impact);
+                    .trackProjectile(projectile, section, player);
         }
     }
 }

@@ -1,64 +1,57 @@
 package fr.segame.armesiaCrackShotAddon;
 
-import org.bukkit.Color;
 import org.bukkit.Location;
-import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class ImpactManager {
 
-    public void trackProjectile(Projectile projectile, ConfigurationSection sec) {
-
+    public void trackProjectile(Projectile projectile, ConfigurationSection weaponSection, Player shooter) {
         new BukkitRunnable() {
-
             @Override
             public void run() {
-
                 if (projectile.isDead() || !projectile.isValid()) {
-
                     Location loc = projectile.getLocation();
-                    spawnImpact(loc, sec);
-
+                    spawnImpact(loc, weaponSection, shooter);
                     cancel();
-                    return;
                 }
-
             }
-
         }.runTaskTimer(Main.getInstance(), 0L, 1L);
     }
 
-    private void spawnImpact(Location loc, ConfigurationSection sec) {
+    private void spawnImpact(Location impactLoc, ConfigurationSection weaponSection, Player shooter) {
 
-        String shape = sec.getString("Shape", "SPHERE");
+        ConfigurationSection zones = weaponSection.getConfigurationSection("Zones");
+        if (zones == null) return;
 
-        double radius = sec.getDouble("Radius", 2);
-        int points = sec.getInt("Points", 30);
+        for (String key : zones.getKeys(false)) {
 
-        String[] rgb = sec.getString("Color", "255-100-0").split("-");
-        Color color = Color.fromRGB(
-                Integer.parseInt(rgb[0]),
-                Integer.parseInt(rgb[1]),
-                Integer.parseInt(rgb[2])
-        );
+            ConfigurationSection zone = zones.getConfigurationSection(key);
+            if (zone == null || !zone.getBoolean("Enabled", false)) continue;
 
-        for (int i = 0; i < points; i++) {
+            String trigger = zone.getString("Trigger", "IMPACT");
+            if (!trigger.equalsIgnoreCase("IMPACT")) continue;
 
-            double theta = 2 * Math.PI * Math.random();
-            double phi = Math.acos(2 * Math.random() - 1);
+            Location loc = ZoneUtils.resolveLocation(zone, shooter, impactLoc);
 
-            double x = radius * Math.sin(phi) * Math.cos(theta);
-            double y = radius * Math.sin(phi) * Math.sin(theta);
-            double z = radius * Math.cos(phi);
+            Sound sound = parseSound(zone.getString("Sound"));
+            if (sound != null) {
+                loc.getWorld().playSound(loc, sound, 1f, 1f);
+            }
 
-            loc.getWorld().spawnParticle(
-                    Particle.REDSTONE,
-                    loc.clone().add(x, y, z),
-                    1,
-                    new Particle.DustOptions(color, 1.5f)
-            );
+            Main.getInstance().getZoneManager().createZone(loc, zone);
+        }
+    }
+
+    private Sound parseSound(String name) {
+        if (name == null) return null;
+        try {
+            return Sound.valueOf(name.toUpperCase());
+        } catch (Exception e) {
+            return null;
         }
     }
 }
