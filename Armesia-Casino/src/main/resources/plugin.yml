@@ -1,0 +1,21 @@
+name: Armesia-Casino
+version: '${version}'
+main: fr.segame.armesiaCasino.MainCasino
+api-version: '1.20'
+description: Plugin de casino pour Armesia
+
+commands:
+  casino:
+    description: Gestion du casino
+    usage: /casino <setblock|removeblock|give|reload|list|settoken> [args...]
+    permission: armesia.casino.admin
+
+permissions:
+  armesia.casino.admin:
+    description: Accès aux commandes d'administration du casino
+    default: op
+  armesia.casino.use:
+    description: Utilisation du casino (cliquer sur un bloc de casino)
+    default: true
+
+
