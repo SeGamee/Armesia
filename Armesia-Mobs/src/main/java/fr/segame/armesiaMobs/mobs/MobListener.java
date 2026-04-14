@@ -1,6 +1,7 @@
 package fr.segame.armesiaMobs.mobs;
 
 import fr.segame.armesia.api.EconomyAPI;
+import fr.segame.armesia.utils.APIProvider;
 import fr.segame.armesiaLevel.api.LevelAPI;
 import fr.segame.armesiaMobs.ArmesiaMobs;
 import fr.segame.armesiaMobs.loot.LootManager;
@@ -33,18 +34,16 @@ public class MobListener implements Listener {
     private final LootManager lootManager;
     private final ZoneManager zoneManager;
     private final DebugManager debug;
-    private final EconomyAPI economyAPI;
     private final StatsManager statsManager;
     private final Random random = new Random();
 
     public MobListener(MobManager mobManager, LootManager lootManager,
                        ZoneManager zoneManager, DebugManager debug,
-                       EconomyAPI economyAPI, StatsManager statsManager) {
+                       StatsManager statsManager) {
         this.mobManager   = mobManager;
         this.lootManager  = lootManager;
         this.zoneManager  = zoneManager;
         this.debug        = debug;
-        this.economyAPI   = economyAPI;
         this.statsManager = statsManager;
     }
 
@@ -122,7 +121,8 @@ public class MobListener implements Listener {
         int money = randBetween(data.getMoneyMin(), data.getMoneyMax());
         int xp    = randBetween(data.getXpMin(),    data.getXpMax());
 
-        if (money > 0 && economyAPI != null) economyAPI.addMoney(player.getUniqueId(), money);
+        EconomyAPI eco = APIProvider.getEconomy();
+        if (money > 0 && eco != null) eco.addMoney(player.getUniqueId(), money);
         if (xp > 0)    LevelAPI.addXP(player.getUniqueId(), xp);
 
         // Stats

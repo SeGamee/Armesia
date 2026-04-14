@@ -2,7 +2,7 @@ package fr.segame.armesia.listeners;
 
 import fr.segame.armesia.Main;
 import fr.segame.armesia.managers.StatsManager;
-import fr.segame.armesia.managers.EconomyManager;
+import fr.segame.armesia.utils.APIProvider;
 import fr.segame.armesiaLevel.api.LevelAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
@@ -20,17 +20,15 @@ import java.util.UUID;
 public class KillListener implements Listener {
 
     private final StatsManager statsManager;
-    private final EconomyManager economyManager;
     private final Main plugin;
     private final Random random = new Random();
 
     // Anti farm
     private final Map<UUID, Long> lastKills = new HashMap<>();
 
-    public KillListener(Main plugin, StatsManager statsManager, EconomyManager economyManager) {
+    public KillListener(Main plugin, StatsManager statsManager) {
         this.plugin = plugin;
         this.statsManager = statsManager;
-        this.economyManager = economyManager;
     }
 
     @EventHandler
@@ -114,13 +112,14 @@ public class KillListener implements Listener {
         int xpReward    = minXp    + (maxXp    > minXp    ? random.nextInt(maxXp    - minXp    + 1) : 0);
 
         // ===== REWARD KILLER =====
-        economyManager.addMoney(killerUUID, moneyReward);
+        var eco = APIProvider.getEconomy();
+        if (eco != null) eco.addMoney(killerUUID, moneyReward);
         LevelAPI.addXP(killerUUID, xpReward);
 
         // ===== LOSS VICTIM =====
-        double victimBalance = economyManager.getMoney(victimUUID);
+        double victimBalance = eco != null ? eco.getMoney(victimUUID) : 0;
         double lostMoney = Math.min(victimBalance, moneyReward);
-        if (lostMoney > 0) economyManager.removeMoney(victimUUID, lostMoney);
+        if (lostMoney > 0 && eco != null) eco.removeMoney(victimUUID, lostMoney);
 
         // ===== MESSAGES =====
         // Broadcast global

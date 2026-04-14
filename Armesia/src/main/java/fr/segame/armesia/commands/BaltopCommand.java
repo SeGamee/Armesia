@@ -1,6 +1,7 @@
 package fr.segame.armesia.commands;
 
 import fr.segame.armesia.Main;
+import fr.segame.armesia.utils.APIProvider;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
@@ -83,8 +84,10 @@ public class BaltopCommand implements CommandExecutor {
             for (int i = from; i < to; i++) {
                 Map.Entry<String, Double> entry = entries.get(i);
                 String rank = rankPrefix(i + 1);
-                sender.sendMessage(rank + " §f" + entry.getKey()
-                        + " §8— §6" + plugin.getEconomyAPI().formatMoney(entry.getValue()));
+                String formatted = APIProvider.getEconomy() != null
+                        ? APIProvider.getEconomy().formatMoney(entry.getValue())
+                        : String.valueOf(entry.getValue());
+                sender.sendMessage(rank + " §f" + entry.getKey() + " §8— §6" + formatted);
             }
         }
 

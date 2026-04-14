@@ -3,6 +3,14 @@ players: {}
 jobs:
   - "Citoyen"
 
+# ── Économie ──────────────────────────────────────────────────────────────────
+economy:
+  money:
+    max-balance: 1000000000 # 1 milliard
+    starting-balance: 500
+  tokens:
+    max-balance: 100000 # 100k
+
 # ── Vitesse ───────────────────────────────────────────────────────────────────
 speed:
   max-walk: 10

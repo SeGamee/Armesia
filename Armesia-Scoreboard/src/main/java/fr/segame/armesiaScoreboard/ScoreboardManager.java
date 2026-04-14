@@ -1,6 +1,8 @@
 package fr.segame.armesiaScoreboard;
 
 import fr.segame.armesia.Main;
+import fr.segame.armesia.api.EconomyAPI;
+import fr.segame.armesia.utils.APIProvider;
 import fr.segame.armesiaLevel.api.LevelAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -21,6 +23,28 @@ public class ScoreboardManager {
 
     public ScoreboardManager(Main core) {
         this.core = core;
+    }
+
+    public static String formatNumber(double number) {
+        if (number >= 1_000_000_000) {
+            return format(number, 1_000_000_000, "G");
+        } else if (number >= 1_000_000) {
+            return format(number, 1_000_000, "M");
+        } else if (number >= 1_000) {
+            return format(number, 1_000, "K");
+        } else {
+            return String.valueOf((int) number);
+        }
+    }
+
+    private static String format(double number, double divisor, String suffix) {
+        double value = number / divisor;
+
+        if (value % 1 == 0) {
+            return String.format("%.0f%s", value, suffix);
+        } else {
+            return String.format("%.1f%s", value, suffix);
+        }
     }
 
     // ── Appelé à la connexion ─────────────────────────────────────────────────
@@ -78,10 +102,11 @@ public class ScoreboardManager {
         UUID uuid = player.getUniqueId();
 
         // 💰 Économie
-        double money = core.getEconomyAPI().getMoney(uuid);
-        int tokens = core.getEconomyAPI().getTokens(uuid);
-        String moneyFormatted = core.getEconomyAPI().formatMoney(money);
-        String tokensFormatted = core.getEconomyAPI().formatTokens(tokens);
+        EconomyAPI eco = APIProvider.getEconomy();
+        double money  = eco != null ? eco.getMoney(uuid)   : 0;
+        int tokens    = eco != null ? eco.getTokens(uuid)  : 0;
+        String moneyFormatted  = eco != null ? eco.formatMoney(money)    : "N/A";
+        String tokensFormatted = eco != null ? eco.formatTokens(tokens)  : "N/A";
 
         // 📊 Stats
         int kills  = core.getStatsAPI().getKills(uuid);
@@ -93,10 +118,11 @@ public class ScoreboardManager {
         int level  = LevelAPI.getLevel(uuid);
         int xp     = LevelAPI.getXP(uuid);
         String xpBar = LevelAPI.getXPBar(uuid, 10);
+        String maxXp = formatNumber(level * 1000);
 
         obj.getScore("§4").setScore(10);
         obj.getScore("Niveau: §7%d✫".formatted(level)).setScore(9);
-        obj.getScore("§b%d %s §e%d".formatted(xp, xpBar, level * 1000)).setScore(8);
+        obj.getScore("§b%d %s §r §e%s".formatted(xp, xpBar, maxXp)).setScore(8);
         obj.getScore("§3").setScore(7);
         obj.getScore("K/D: §a%d§7/§a%d".formatted(kills, deaths)).setScore(6);
         obj.getScore("KS/Ratio: §a%d§7/§a%s".formatted(streak, ratio)).setScore(5);

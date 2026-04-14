@@ -1,7 +1,10 @@
 package fr.segame.armesia;
 
 import fr.segame.armesia.api.EconomyAPI;
+import fr.segame.armesia.api.EconomyImpl;
 import fr.segame.armesia.api.StatsAPI;
+import fr.segame.armesia.utils.APIProvider;
+import org.bukkit.plugin.ServicePriority;
 import fr.segame.armesia.commands.*;
 import fr.segame.armesia.listeners.BlockListener;
 import fr.segame.armesia.listeners.InvSeeListener;
@@ -29,14 +32,12 @@ public final class Main extends JavaPlugin {
     // ─── Managers statiques (accès direct depuis toute la codebase) ─────────────
     public static GroupManager   groupManager;
     public static StatsManager   statsManager;
-    public static EconomyManager economyManager;
 
     // ─── Caches joueur partagés (lus/écrits par PlayerDataManager & compagnie) ──
     public static Map<UUID, String>  groups            = new HashMap<>();
     public static Map<UUID, String>  jobs              = new HashMap<>();
 
     // ─── Managers d'instance ────────────────────────────────────────────────────
-    private EconomyAPI        economyAPI;
     private StatsAPI          statsAPI;
     private PlayerDataManager playerDataManager;
     private TabManager        tabManager;
@@ -59,8 +60,9 @@ public final class Main extends JavaPlugin {
         playerDataManager = new PlayerDataManager(this);
         tabManager        = new TabManager(this);
 
-        economyManager    = new EconomyManager(this);
-        economyAPI        = new EconomyAPI(economyManager);
+        EconomyManager economyManager = new EconomyManager(this);
+        EconomyImpl    economyImpl    = new EconomyImpl(economyManager);
+        Bukkit.getServicesManager().register(EconomyAPI.class, economyImpl, this, ServicePriority.Normal);
 
         statsManager      = new StatsManager(playerDataManager.getPlayersConfig());
         statsAPI          = new StatsAPI(statsManager);
@@ -94,7 +96,7 @@ public final class Main extends JavaPlugin {
 
     private void registerEvents() {
         PluginManager pm = getServer().getPluginManager();
-        pm.registerEvents(new KillListener(this, statsManager, economyManager), this);
+        pm.registerEvents(new KillListener(this, statsManager), this);
         pm.registerEvents(new PlayersListeners(), this);
         pm.registerEvents(new BlockListener(), this);
         pm.registerEvents(new InvSeeListener(), this);
@@ -118,9 +120,10 @@ public final class Main extends JavaPlugin {
         getCommand("broadcast").setExecutor(new BroadcastCommand());
         getCommand("group").setExecutor(new GroupCommand());
         getCommand("reloadconfig").setExecutor(new ReloadConfigCommand());
-        getCommand("money").setExecutor(new EconomyCommand(this));
-        getCommand("tokens").setExecutor(new EconomyCommand(this));
-        getCommand("pay").setExecutor(new EconomyCommand(this));
+        EconomyCommand ecoCmd = new EconomyCommand();
+        getCommand("money").setExecutor(ecoCmd);
+        getCommand("tokens").setExecutor(ecoCmd);
+        getCommand("pay").setExecutor(ecoCmd);
         getCommand("stats").setExecutor(new StatsCommand());
         getCommand("statsadmin").setExecutor(new StatsAdminCommand());
         // ── Utilitaires ──────────────────────────────────────────────────────
@@ -170,9 +173,10 @@ public final class Main extends JavaPlugin {
     public static Main          getInstance()        { return instance; }
     public static GroupManager  getGroupManager()    { return groupManager; }
     public static StatsManager  getStatsManager()    { return statsManager; }
-    public static EconomyManager getEconomyManager() { return economyManager; }
 
-    public EconomyAPI        getEconomyAPI()         { return economyAPI; }
+    /** @deprecated Utilisez {@link fr.segame.armesia.utils.APIProvider#getEconomy()} à la place. */
+    @Deprecated
+    public EconomyAPI        getEconomyAPI()         { return APIProvider.getEconomy(); }
     public StatsAPI          getStatsAPI()           { return statsAPI; }
     public PlayerDataManager getPlayerDataManager()  { return playerDataManager; }
     public TabManager        getTabManager()         { return tabManager; }

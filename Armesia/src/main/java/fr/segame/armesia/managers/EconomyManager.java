@@ -18,9 +18,14 @@ public class EconomyManager {
     }
 
     public void setMoney(UUID uuid, double amount) {
-        plugin.getPlayersConfig().set("players." + uuid + ".money", amount);
+        double max = plugin.getConfig().getDouble("economy.money.max-balance", 1_000_000.0);
+        plugin.getPlayersConfig().set("players." + uuid + ".money", Math.max(0.0, Math.min(amount, max)));
         plugin.savePlayers();
         Main.updatePlayerScoreboard(uuid);
+    }
+
+    public double getMaxMoney() {
+        return plugin.getConfig().getDouble("economy.money.max-balance", 1_000_000.0);
     }
 
     public void addMoney(UUID uuid, double amount) {
@@ -46,9 +51,14 @@ public class EconomyManager {
     }
 
     public void setTokens(UUID uuid, int amount) {
-        plugin.getPlayersConfig().set("players." + uuid + ".tokens", amount);
+        int max = plugin.getConfig().getInt("economy.tokens.max-balance", 100_000);
+        plugin.getPlayersConfig().set("players." + uuid + ".tokens", Math.max(0, Math.min(amount, max)));
         plugin.savePlayers();
         Main.updatePlayerScoreboard(uuid);
+    }
+
+    public int getMaxTokens() {
+        return plugin.getConfig().getInt("economy.tokens.max-balance", 100_000);
     }
 
     public void addTokens(UUID uuid, int amount) {
