@@ -15,15 +15,22 @@ public class ImpactManager {
             public void run() {
                 if (projectile.isDead() || !projectile.isValid()) {
                     Location loc = projectile.getLocation();
-                    spawnImpact(loc, weaponSection, shooter);
+                    onProjectileImpact(loc, weaponSection, shooter);
                     cancel();
                 }
             }
         }.runTaskTimer(Main.getInstance(), 0L, 1L);
     }
 
-    private void spawnImpact(Location impactLoc, ConfigurationSection weaponSection, Player shooter) {
+    private void onProjectileImpact(Location impactLoc, ConfigurationSection weaponSection, Player shooter) {
 
+        // 🔥 IMPACT PARTICLES
+        ConfigurationSection impactSec = weaponSection.getConfigurationSection("Impact");
+        if (impactSec != null && impactSec.getBoolean("Enabled", false)) {
+            Main.getInstance().getTrailManager().spawnImpact(impactLoc, impactSec);
+        }
+
+        // 🔥 ZONES
         ConfigurationSection zones = weaponSection.getConfigurationSection("Zones");
         if (zones == null) return;
 

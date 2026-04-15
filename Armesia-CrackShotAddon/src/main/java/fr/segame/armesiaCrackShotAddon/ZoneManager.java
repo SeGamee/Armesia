@@ -35,6 +35,7 @@ public class ZoneManager {
 
         final Sound loopSound = parseSound(sec.getString("Sound_Loop"));
         String shape = sec.getString("Shape", "CYLINDER");
+        boolean passThroughWalls = sec.getBoolean("PassThrough_Walls", true);
 
         World world = center.getWorld();
 
@@ -52,7 +53,7 @@ public class ZoneManager {
 
                 spawnParticles(center, radius, heightUp, heightDown,
                         surfacePoints, insidePoints,
-                        particle, color, shape);
+                        particle, color, shape, passThroughWalls);
 
                 for (Player p : world.getPlayers()) {
 
@@ -108,7 +109,7 @@ public class ZoneManager {
     // 🔥 PARTICULES (SURFACE + INSIDE)
     private void spawnParticles(Location center, double radius, double heightUp, double heightDown,
                                 int surfacePoints, int insidePoints,
-                                Particle particle, Color color, String shape) {
+                                Particle particle, Color color, String shape, boolean passThroughWalls) {
 
         World world = center.getWorld();
 
@@ -143,7 +144,7 @@ public class ZoneManager {
                     break;
             }
 
-            spawnParticle(world, center.clone().add(x, y, z), particle, color);
+            spawnParticle(world, center.clone().add(x, y, z), particle, color, passThroughWalls);
         }
 
         // 🔸 INSIDE
@@ -180,12 +181,14 @@ public class ZoneManager {
                     break;
             }
 
-            spawnParticle(world, center.clone().add(x, y, z), particle, color);
+            spawnParticle(world, center.clone().add(x, y, z), particle, color, passThroughWalls);
         }
     }
 
     // 🔥 SPAWN PARTICULE
-    private void spawnParticle(World world, Location loc, Particle particle, Color color) {
+    private void spawnParticle(World world, Location loc, Particle particle, Color color, boolean passThroughWalls) {
+
+        if (!passThroughWalls && !loc.getBlock().isPassable()) return;
 
         if (particle == Particle.REDSTONE) {
             world.spawnParticle(

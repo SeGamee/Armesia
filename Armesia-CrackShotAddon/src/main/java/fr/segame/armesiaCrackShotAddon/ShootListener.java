@@ -5,6 +5,7 @@ import com.shampaggon.crackshot.events.WeaponShootEvent;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
@@ -31,7 +32,7 @@ public class ShootListener implements Listener {
 
         if (section == null) return;
 
-        // 🔥 ZONES AU TIR
+        // 🔥 ZONES AU TIR (Trigger: SHOOT)
         ConfigurationSection zones = section.getConfigurationSection("Zones");
 
         if (zones != null) {
@@ -40,25 +41,33 @@ public class ShootListener implements Listener {
                 ConfigurationSection zone = zones.getConfigurationSection(key);
                 if (zone == null || !zone.getBoolean("Enabled", false)) continue;
 
-                String trigger = zone.getString("Trigger", "IMPACT");
-
-                if (trigger.equalsIgnoreCase("SHOOT")) {
-
+                if (zone.getString("Trigger", "IMPACT").equalsIgnoreCase("SHOOT")) {
                     Location loc = ZoneUtils.resolveLocation(zone, player, null);
-
-                    Main.getInstance().getZoneManager()
-                            .createZone(loc, zone);
+                    Main.getInstance().getZoneManager().createZone(loc, zone);
                 }
             }
         }
 
-        // 🔥 ZONES À L'IMPACT
-        if (zones != null
-                && e.getProjectile() != null
-                && e.getProjectile() instanceof org.bukkit.entity.Projectile projectile) {
+        // 🔥 TRAIL + IMPACT SUR LE PROJECTILE
+        if (e.getProjectile() != null
+                && e.getProjectile() instanceof Projectile projectile) {
 
-            Main.getInstance().getImpactManager()
-                    .trackProjectile(projectile, section, player);
+            // ── CustomParticles → Trail ──────────────────────────────
+            ConfigurationSection particles = section.getConfigurationSection("CustomParticles");
+            if (particles != null && particles.getBoolean("Enabled", false)) {
+                Main.getInstance().getTrailManager()
+                        .startProjectileTrail(projectile, particles);
+            }
+
+            // ── Impact particles + Zones IMPACT ─────────────────────
+            boolean hasImpactParticles = section.getConfigurationSection("Impact") != null
+                    && section.getBoolean("Impact.Enabled", false);
+            boolean hasImpactZones = zones != null;
+
+            if (hasImpactParticles || hasImpactZones) {
+                Main.getInstance().getImpactManager()
+                        .trackProjectile(projectile, section, player);
+            }
         }
     }
 }
