@@ -1,6 +1,7 @@
 package fr.segame.armesia.utils;
 
 import fr.segame.armesia.api.EconomyAPI;
+import fr.segame.armesia.api.GroupAPI;
 import org.bukkit.Bukkit;
 
 /**
@@ -24,6 +25,15 @@ public final class APIProvider {
      */
     public static EconomyAPI getEconomy() {
         return Bukkit.getServicesManager().load(EconomyAPI.class);
+    }
+
+    /**
+     * Retourne l'implémentation de {@link GroupAPI} enregistrée dans le ServicesManager.
+     *
+     * @return l'instance de gestion des groupes, ou {@code null} si le plugin Armesia n'est pas chargé.
+     */
+    public static GroupAPI getGroups() {
+        return Bukkit.getServicesManager().load(GroupAPI.class);
     }
 }
 

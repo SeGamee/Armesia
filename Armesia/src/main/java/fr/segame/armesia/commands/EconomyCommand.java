@@ -5,7 +5,9 @@ import fr.segame.armesia.api.EconomyAPI;
 import fr.segame.armesia.utils.APIProvider;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.command.*;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
@@ -28,49 +30,54 @@ public class EconomyCommand implements CommandExecutor {
         // =========================
         if (cmd.getName().equalsIgnoreCase("money")) {
 
-            // /money
+            // /money — propre solde
             if (args.length == 0) {
                 if (!(sender instanceof Player player)) {
                     sender.sendMessage("§cCommande joueur uniquement.");
                     return true;
                 }
-
-                double money = eco.getMoney(player.getUniqueId());
-                sender.sendMessage("§aArgent: §f" + eco.formatMoney(money));
+                sender.sendMessage("§aArgent: §f" + eco.formatMoney(eco.getMoney(player.getUniqueId())));
                 return true;
             }
 
-            // /money <player>
-            if (args.length == 1) {
-                if (!Main.checkPerm(sender, "armesia.money.admin")) {
-                    sender.sendMessage("§cPas la permission.");
-                    return true;
-                }
-
-                OfflinePlayer target = Bukkit.getOfflinePlayer(args[0]);
-
-                if (!target.hasPlayedBefore()) {
-                    sender.sendMessage("§cJoueur inconnu.");
-                    return true;
-                }
-
-                double money = eco.getMoney(target.getUniqueId());
-                sender.sendMessage("§aArgent de " + target.getName() + ": §f" + eco.formatMoney(money));
+            // /money <joueur> — consulter le solde d'un autre (permission légère)
+            if (!Main.checkPerm(sender, "armesia.money.see")) {
+                sender.sendMessage("§cPas la permission.");
                 return true;
             }
 
-            // /money add/remove/set/reset
+            OfflinePlayer target = Bukkit.getOfflinePlayer(args[0]);
+            if (!target.hasPlayedBefore()) {
+                sender.sendMessage("§cJoueur inconnu.");
+                return true;
+            }
+
+            sender.sendMessage("§aArgent de §f" + target.getName() + "§a : §f"
+                    + eco.formatMoney(eco.getMoney(target.getUniqueId())));
+            return true;
+        }
+
+        // =========================
+        // /moneyadmin
+        // =========================
+        if (cmd.getName().equalsIgnoreCase("moneyadmin")) {
+
             if (!Main.checkPerm(sender, "armesia.money.admin")) {
                 sender.sendMessage("§cPas la permission.");
                 return true;
             }
 
-            String action = args[0];
+            if (args.length == 0) {
+                sender.sendMessage("§cUsage: /moneyadmin <add|remove|set|reset> <joueur> [montant]");
+                return true;
+            }
 
-            // /money reset <joueur> — ne requiert pas de montant
-            if (action.equalsIgnoreCase("reset")) {
+            String action = args[0].toLowerCase();
+
+            // /moneyadmin reset <joueur>
+            if (action.equals("reset")) {
                 if (args.length < 2) {
-                    sender.sendMessage("§cUsage: /money reset <joueur>");
+                    sender.sendMessage("§cUsage: /moneyadmin reset <joueur>");
                     return true;
                 }
                 OfflinePlayer target = Bukkit.getOfflinePlayer(args[1]);
@@ -83,69 +90,58 @@ public class EconomyCommand implements CommandExecutor {
                 return true;
             }
 
-            // /money add/remove/set <joueur> <montant>
+            // /moneyadmin add|remove|set <joueur> <montant>
             if (args.length < 3) {
-                sender.sendMessage("§cUsage: /money <add|remove|set|reset> <joueur> [montant]");
+                sender.sendMessage("§cUsage: /moneyadmin <add|remove|set|reset> <joueur> [montant]");
                 return true;
             }
 
             OfflinePlayer target = Bukkit.getOfflinePlayer(args[1]);
-
             if (!target.hasPlayedBefore()) {
                 sender.sendMessage("§cJoueur inconnu.");
                 return true;
             }
 
             double amount;
-
             try {
                 amount = Double.parseDouble(args[2]);
-            } catch (Exception e) {
+            } catch (NumberFormatException e) {
                 sender.sendMessage("§cMontant invalide.");
                 return true;
             }
 
-            if (amount != Math.floor(amount) || Double.isInfinite(amount)) {
-                sender.sendMessage("§cLe montant doit être un nombre entier.");
+            if (amount != Math.floor(amount) || Double.isInfinite(amount) || amount < 0) {
+                sender.sendMessage("§cLe montant doit être un nombre entier positif.");
                 return true;
             }
 
             UUID uuid = target.getUniqueId();
             double max = eco.getMaxMoney();
 
-            switch (action.toLowerCase()) {
-
-                case "add":
-                    double newBalance = eco.getMoney(uuid) + amount;
-                    if (newBalance > max) {
-                        sender.sendMessage("§cPlafond atteint (§f" + eco.formatMoney(max) + "§c). Solde de §f"
-                                + target.getName() + " §cplafonné.");
-                    }
+            switch (action) {
+                case "add" -> {
+                    if (eco.getMoney(uuid) + amount > max)
+                        sender.sendMessage("§cPlafond atteint (§f" + eco.formatMoney(max) + "§c). Solde plafonné.");
                     eco.addMoney(uuid, amount);
                     sender.sendMessage("§aAjouté §f" + eco.formatMoney(amount) + " §aà §f" + target.getName()
                             + "§a. Nouveau solde : §f" + eco.formatMoney(eco.getMoney(uuid)));
-                    break;
-
-                case "remove":
+                }
+                case "remove" -> {
                     if (!eco.removeMoney(uuid, amount)) {
-                        sender.sendMessage("§cPas assez d'argent.");
+                        sender.sendMessage("§cPas assez d'argent sur le compte de §f" + target.getName() + "§c.");
                         return true;
                     }
                     sender.sendMessage("§aRetiré §f" + eco.formatMoney(amount) + " §aà §f" + target.getName()
                             + "§a. Nouveau solde : §f" + eco.formatMoney(eco.getMoney(uuid)));
-                    break;
-
-                case "set":
-                    if (amount > max) {
+                }
+                case "set" -> {
+                    if (amount > max)
                         sender.sendMessage("§cMontant supérieur au plafond (§f" + eco.formatMoney(max) + "§c). Valeur plafonnée.");
-                    }
                     eco.setMoney(uuid, amount);
-                    sender.sendMessage("§aSolde de §f" + target.getName() + " §adéfini à §f" + eco.formatMoney(eco.getMoney(uuid)));
-                    break;
-
-                default:
-                    sender.sendMessage("§cAction inconnue. Usage: /money <add|remove|set|reset> <joueur> [montant]");
-                    break;
+                    sender.sendMessage("§aSolde de §f" + target.getName() + " §adéfini à §f"
+                            + eco.formatMoney(eco.getMoney(uuid)));
+                }
+                default -> sender.sendMessage("§cAction inconnue. Usage: /moneyadmin <add|remove|set|reset> <joueur> [montant]");
             }
 
             return true;

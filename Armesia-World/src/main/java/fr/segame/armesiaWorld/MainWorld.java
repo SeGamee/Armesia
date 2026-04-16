@@ -53,7 +53,8 @@ public class MainWorld extends JavaPlugin {
         WorldCommand worldCmd = new WorldCommand(worldManager);
         getCommand("world").setExecutor(worldCmd);
         getCommand("world").setTabCompleter(worldCmd);
-        getCommand("spawn").setExecutor(new SpawnCommand(spawnManager, teleportManager));
+        SpawnCommand spawnCmd = new SpawnCommand(spawnManager, teleportManager);
+        getCommand("spawn").setExecutor(spawnCmd);
         getCommand("setspawn").setExecutor(new SetSpawnCommand(spawnManager));
 
         MapWandListener wandListener = new MapWandListener(this);
@@ -89,5 +90,3 @@ public class MainWorld extends JavaPlugin {
     public ParachuteManager getParachuteManager()  { return parachuteManager; }
     public PortalManager    getPortalManager()     { return portalManager;    }
 }
-
-

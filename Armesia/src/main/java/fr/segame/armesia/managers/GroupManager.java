@@ -115,6 +115,7 @@ public class GroupManager {
         plugin.getConfig().set("groups." + group + ".permissions", perms);
         plugin.saveConfig();
 
+        refreshOnlinePlayers(group);
         return true;
     }
 
@@ -132,6 +133,7 @@ public class GroupManager {
         plugin.getConfig().set("groups." + group + ".permissions", perms);
         plugin.saveConfig();
 
+        refreshOnlinePlayers(group);
         return true;
     }
 
@@ -141,6 +143,22 @@ public class GroupManager {
         }
 
         return plugin.getConfig().getStringList("groups." + group + ".permissions");
+    }
+
+    /**
+     * Rafraîchit l'attachment Bukkit de tous les joueurs en ligne
+     * qui appartiennent au groupe donné.
+     * Appelé automatiquement après {@link #addPermission} et {@link #removePermission}.
+     */
+    private void refreshOnlinePlayers(String group) {
+        for (Player online : Bukkit.getOnlinePlayers()) {
+            String playerGroup = Main.groupManager.getValidGroupOrDefault(
+                    Main.groups.get(online.getUniqueId())
+            );
+            if (playerGroup.equalsIgnoreCase(group)) {
+                Main.refreshPermissions(online);
+            }
+        }
     }
 
     // ---------------- PREFIX ----------------
@@ -237,6 +255,7 @@ public class GroupManager {
             Player onlinePlayer = player.getPlayer();
             if (onlinePlayer != null) {
                 Main.updateTab(onlinePlayer);
+                Main.refreshPermissions(onlinePlayer);  // met à jour l'attachment Bukkit
             }
         }
 

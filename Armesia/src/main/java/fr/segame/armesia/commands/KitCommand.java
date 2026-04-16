@@ -148,13 +148,28 @@ public class KitCommand implements CommandExecutor {
         sender.sendMessage("§a§lKits disponibles");
         sender.sendMessage("§8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
         int shown = 0;
+        Player playerSender = sender instanceof Player p ? p : null;
         for (String k : kits) {
             String perm   = kitManager.getKitPermission(k);
             boolean canUse = perm.isEmpty() || Main.checkPerm(sender, perm);
             if (!canUse) continue;   // masquer les kits sans permission
-            String cd = kitManager.getKitCooldown(k) > 0
-                    ? " §8(cd: §7" + KitManager.formatDuration(kitManager.getKitCooldown(k) * 1000) + "§8)" : "";
-            sender.sendMessage("§a" + kitManager.getKitDisplayName(k) + " §8— §f/kit " + k + cd);
+
+            boolean onCooldown = playerSender != null
+                    && kitManager.isOnCooldown(playerSender.getUniqueId(), k);
+
+            String kitLine;
+            String cdInfo;
+            if (onCooldown) {
+                long remaining = kitManager.getRemainingMs(playerSender.getUniqueId(), k);
+                kitLine = "§7§m" + kitManager.getKitDisplayName(k) + "§r";
+                cdInfo  = " §c(disponible dans §e" + KitManager.formatDuration(remaining) + "§c)";
+            } else {
+                long cd = kitManager.getKitCooldown(k);
+                kitLine = "§a" + kitManager.getKitDisplayName(k);
+                cdInfo  = cd > 0 ? " §8(cd: §7" + KitManager.formatDuration(cd * 1000) + "§8)" : "";
+            }
+
+            sender.sendMessage(kitLine + " §8— §f/kit " + k + cdInfo);
             shown++;
         }
         if (shown == 0) sender.sendMessage("§7Aucun kit disponible.");

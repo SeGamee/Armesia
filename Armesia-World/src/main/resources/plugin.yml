@@ -13,6 +13,7 @@ commands:
   spawn:
     description: Se téléporter au spawn
     usage: /spawn
+    permission: armesia.world.spawn
   setspawn:
     description: Définir le point de spawn
     usage: /setspawn

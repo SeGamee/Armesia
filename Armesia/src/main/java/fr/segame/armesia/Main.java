@@ -2,6 +2,8 @@ package fr.segame.armesia;
 
 import fr.segame.armesia.api.EconomyAPI;
 import fr.segame.armesia.api.EconomyImpl;
+import fr.segame.armesia.api.GroupAPI;
+import fr.segame.armesia.api.GroupImpl;
 import fr.segame.armesia.api.StatsAPI;
 import fr.segame.armesia.utils.APIProvider;
 import org.bukkit.plugin.ServicePriority;
@@ -56,6 +58,7 @@ public final class Main extends JavaPlugin {
         // ─── Initialisation des managers ────────────────────────────────────────
         groupManager      = new GroupManager(this);
         groupManager.ensureDefaultGroupExists();
+        Bukkit.getServicesManager().register(GroupAPI.class, new GroupImpl(groupManager), this, ServicePriority.Normal);
 
         playerDataManager = new PlayerDataManager(this);
         tabManager        = new TabManager(this);
@@ -122,6 +125,7 @@ public final class Main extends JavaPlugin {
         getCommand("reloadconfig").setExecutor(new ReloadConfigCommand());
         EconomyCommand ecoCmd = new EconomyCommand();
         getCommand("money").setExecutor(ecoCmd);
+        getCommand("moneyadmin").setExecutor(ecoCmd);
         getCommand("tokens").setExecutor(ecoCmd);
         getCommand("pay").setExecutor(ecoCmd);
         getCommand("stats").setExecutor(new StatsCommand());
@@ -193,6 +197,12 @@ public final class Main extends JavaPlugin {
 
     public static void loadPlayer(Player player)                        { instance.playerDataManager.loadPlayer(player); }
     public static void savePlayer(Player player)                        { instance.playerDataManager.savePlayer(player); }
+    public static void unloadPlayer(Player player)                      { instance.playerDataManager.unloadPlayer(player); }
+    /** Recrée l'attachment Bukkit du joueur avec les permissions de son groupe actuel. */
+    public static void refreshPermissions(Player player)               {
+        String group = Main.groupManager.getValidGroupOrDefault(Main.groups.get(player.getUniqueId()));
+        instance.playerDataManager.applyAttachment(player, group);
+    }
     public static boolean hasGroupPermission(Player player, String perm){ return instance.playerDataManager.hasGroupPermission(player, perm); }
 
     /**

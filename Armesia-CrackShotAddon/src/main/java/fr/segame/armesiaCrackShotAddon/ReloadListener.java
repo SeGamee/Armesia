@@ -46,7 +46,7 @@ public class ReloadListener implements Listener {
 
     @EventHandler
     public void onItemChange(PlayerItemHeldEvent e) {
-        cancelReload(e.getPlayer());
+        cancelReloadInterrupted(e.getPlayer());
     }
 
     @EventHandler
@@ -54,11 +54,12 @@ public class ReloadListener implements Listener {
         if (!(e.getWhoClicked() instanceof Player player)) return;
 
         UUID uuid = player.getUniqueId();
-
         if (!reloadTasks.containsKey(uuid)) return;
 
-        if (e.getSlot() == player.getInventory().getHeldItemSlot()) {
-            cancelReload(player);
+        // Annule si le curseur est sur un slot de la hotbar (0–8),
+        // que ce soit un clic souris ou une touche clavier.
+        if (e.getSlot() >= 0 && e.getSlot() <= 8) {
+            cancelReloadInterrupted(player);
         }
     }
 
@@ -157,7 +158,7 @@ public class ReloadListener implements Listener {
                 }
 
                 if (!player.isOnline()) {
-                    cancelReload(player);
+                    cancelReloadInterrupted(player);
                     return;
                 }
 
@@ -168,7 +169,8 @@ public class ReloadListener implements Listener {
                 int startSlot = reloadSlot.getOrDefault(uuid, -1);
 
                 if (currentSlot != startSlot) {
-                    cancelReload(player);
+                    // Le slot a changé (touche numérique sans inventory ouvert)
+                    cancelReloadInterrupted(player);
                     return;
                 }
 
@@ -179,7 +181,8 @@ public class ReloadListener implements Listener {
                 }
 
                 if (!currentWeapon.equals(weapon)) {
-                    cancelReload(player);
+                    // L'arme en main a changé
+                    cancelReloadInterrupted(player);
                     return;
                 }
 
@@ -228,6 +231,22 @@ public class ReloadListener implements Listener {
         // on capture la session qui vient de finir
         int completedSession = reloadSession.getOrDefault(uuid, -1);
 
+        // ── Rechargement balle par balle ? ─────────────────────────────────────
+        // On vérifie si les munitions sont au maximum. Si non, c'est un rechargement
+        // séquentiel (ex. sniper) : on annule silencieusement la barre pour laisser
+        // le prochain WeaponReloadEvent démarrer une nouvelle barre pour la balle suivante.
+        ItemStack item = player.getInventory().getItemInMainHand();
+        int currentAmmo = getAmmoFromItem(item);
+        int maxAmmo     = getMaxAmmo(reloadWeapon);
+        boolean isFull  = (maxAmmo <= 0 || currentAmmo < 0 || currentAmmo >= maxAmmo);
+
+        if (!isFull) {
+            // Annule immédiatement pour que le prochain WeaponReloadEvent puisse reprendre
+            silentCancelReload(player);
+            return;
+        }
+
+        // Chargeur plein → afficher "Terminé"
         String loadedMsg = Main.getInstance().getConfig().getString("messages.loaded");
         player.sendActionBar(color(loadedMsg));
 
@@ -312,6 +331,58 @@ public class ReloadListener implements Listener {
         reloadSession.remove(uuid);
 
         player.sendActionBar("");
+    }
+
+    /**
+     * Annule le reload sans effacer l'action bar, utilisé pour le rechargement balle par balle
+     * (la barre du prochain bullet sera affichée immédiatement).
+     * On réinitialise lastReload pour que le prochain WeaponReloadEvent passe le check de 250 ms.
+     */
+    private void silentCancelReload(Player player) {
+        UUID uuid = player.getUniqueId();
+
+        BukkitTask task = reloadTasks.remove(uuid);
+        if (task != null) task.cancel();
+
+        reloadSlot.remove(uuid);
+        reloadWeapons.remove(uuid);
+        reloadSession.remove(uuid);
+        lastReload.remove(uuid);   // ← reset pour que la prochaine balle démarre immédiatement
+    }
+
+    /**
+     * Annule le reload et affiche le message "Rechargement Interrompu" (configurable).
+     * Utilisé lors d'un changement de slot ou d'une interaction avec la hotbar.
+     * Ne fait rien si aucun rechargement n'est en cours.
+     */
+    private void cancelReloadInterrupted(Player player) {
+        UUID uuid = player.getUniqueId();
+
+        // Garde : ne rien faire si aucun rechargement visuel n'est actif
+        if (!reloadTasks.containsKey(uuid)) return;
+
+        BukkitTask task = reloadTasks.remove(uuid);
+        if (task != null) task.cancel();
+
+        reloadSlot.remove(uuid);
+        reloadWeapons.remove(uuid);
+        reloadSession.remove(uuid);
+
+        String msg = Main.getInstance().getConfig()
+                .getString("messages.interrupted", "&cRechargement interrompu");
+        player.sendActionBar(color(msg));
+    }
+
+    /**
+     * Lit la capacité maximale du chargeur depuis la config CrackShot.
+     * Retourne -1 si introuvable (munitions illimitées ou config absente).
+     */
+    private int getMaxAmmo(String weapon) {
+        ConfigurationSection section = getWeaponConfig(weapon);
+        if (section == null) return -1;
+        ConfigurationSection ammoSection = section.getConfigurationSection("Ammo");
+        if (ammoSection == null) return -1;
+        return ammoSection.getInt("Max_Ammo", -1);
     }
 
     private void sendMessage(Player player, String weapon, String key, String bar, String time) {

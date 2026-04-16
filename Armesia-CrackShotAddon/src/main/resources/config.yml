@@ -1,6 +1,7 @@
 messages:
   reloading: "&7&lRECHARGEMENT..."
   loaded: "&a&lChargé !"
+  interrupted: "&cRechargement interrompu"
   format: "{message} {bar} &7&l{time}" # {weapon} » {message} [{bar}] {time}
 
 default:

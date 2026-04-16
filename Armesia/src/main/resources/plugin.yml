@@ -31,7 +31,10 @@ commands:
   reloadconfig:
     description: "Recharger la configuration"
   money:
-    description: "Voir ou gérer l'argent"
+    description: "Voir son solde ou celui d'un autre joueur (armesia.money.see)"
+  moneyadmin:
+    description: "Gérer l'argent des joueurs (add/remove/set/reset)"
+    usage: "/moneyadmin <add|remove|set|reset> <joueur> [montant]"
   tokens:
     description: "Voir ou gérer les tokens"
   pay:

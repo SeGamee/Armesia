@@ -13,6 +13,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.AbstractVillager;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Villager;
@@ -97,6 +98,13 @@ public class MobListener implements Listener {
         // Réenregistrement après redémarrage
         mobManager.addInstance(new MobInstance(entity.getUniqueId(), mobId,
                 zoneId != null ? zoneId : "manual"));
+
+        // Restaurer les propriétés custom
+        LivingEntity le = (LivingEntity) entity;
+        le.setCanPickupItems(false);
+        MobData data = mobManager.getMob(mobId);
+        if (data != null) MobSpawner.applyMobName(le, data);
+
         debug.logVerbose("§b[CHUNK-RESTORE]§7 mob=§f" + mobId + "§7 zone=§f" + zoneId);
     }
 
@@ -115,6 +123,9 @@ public class MobListener implements Listener {
 
         MobData data = mobManager.getMob(instance.getMobId());
         if (data == null) return;
+
+        // Afficher 0 ❤ pendant l'animation de mort
+        MobSpawner.applyMobName(event.getEntity(), data, 0);
 
         lootManager.dropLoot(event.getEntity().getLocation(), data.getLootTable());
 
@@ -143,7 +154,7 @@ public class MobListener implements Listener {
         return min + random.nextInt(max - min + 1);
     }
 
-    // 🚫 PAS DE DÉGÂTS MOB VS MOB
+    // ⚔️ DÉGÂTS — mob vs mob annulé + cooldown d'attaque joueur appliqué
     @EventHandler
     public void onDamage(EntityDamageByEntityEvent event) {
         if (!(event.getEntity() instanceof org.bukkit.entity.Mob victim)) return;
@@ -151,9 +162,50 @@ public class MobListener implements Listener {
         MobInstance instance = mobManager.getInstance(victim.getUniqueId());
         if (instance == null) return;
 
+        // Pas de dégâts mob vs mob
         if (event.getDamager() instanceof org.bukkit.entity.Mob) {
             event.setCancelled(true);
+            return;
         }
+
+        // ❤ Mettre à jour la vie affichée après le coup
+        // On lit toujours la vraie valeur au tick suivant : CrackShot (et d'autres plugins)
+        // peuvent annuler ou modifier l'événement APRÈS ce handler, ce qui rendrait
+        // getFinalDamage() inexact et provoquerait un affichage erroné à 0.
+        MobData data = mobManager.getMob(instance.getMobId());
+        if (data != null) {
+            Bukkit.getScheduler().runTask(ArmesiaMobs.getInstance(), () -> {
+                if (!victim.isValid()) return;
+                if (victim.isDead()) {
+                    MobSpawner.applyMobName(victim, data, 0);
+                } else {
+                    MobSpawner.applyMobName(victim, data);
+                }
+            });
+        }
+    }
+
+    // ❤ Mise à jour de la vie pour tout autre type de dégât (chute, explosion…)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onMobDamaged(EntityDamageEvent event) {
+        // Déjà géré par onDamage pour EntityDamageByEntityEvent
+        if (event instanceof EntityDamageByEntityEvent) return;
+        if (!(event.getEntity() instanceof LivingEntity mob)) return;
+
+        MobInstance instance = mobManager.getInstance(mob.getUniqueId());
+        if (instance == null) return;
+
+        MobData data = mobManager.getMob(instance.getMobId());
+        if (data == null) return;
+
+        Bukkit.getScheduler().runTask(ArmesiaMobs.getInstance(), () -> {
+            if (!mob.isValid()) return;
+            if (mob.isDead()) {
+                MobSpawner.applyMobName(mob, data, 0);
+            } else {
+                MobSpawner.applyMobName(mob, data);
+            }
+        });
     }
 
     @EventHandler
@@ -182,24 +234,20 @@ public class MobListener implements Listener {
     public void onCombust(EntityCombustEvent event) {
         MobInstance instance = mobManager.getInstance(event.getEntity().getUniqueId());
         if (instance == null) return;
-
         event.setCancelled(true);
     }
 
-    // 🕊️ VILLAGEOIS PACIFIQUES — annuler tous les dégâts sauf joueurs et explosions
+    // 🕊️ VILLAGEOIS PACIFIQUES
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onVillagerDamage(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Villager)) return;
         if (mobManager.getInstance(event.getEntity().getUniqueId()) == null) return;
 
         if (event instanceof EntityDamageByEntityEvent dmg) {
-            // Coup direct d'un joueur
             if (dmg.getDamager() instanceof Player) return;
-            // Projectile (flèche, trident…) tiré par un joueur
             if (dmg.getDamager() instanceof Projectile proj && proj.getShooter() instanceof Player) return;
         }
 
-        // Explosions (TNT, Creeper, etc.) — autoriser le dégât
         EntityDamageEvent.DamageCause cause = event.getCause();
         if (cause == EntityDamageEvent.DamageCause.ENTITY_EXPLOSION
                 || cause == EntityDamageEvent.DamageCause.BLOCK_EXPLOSION) return;
@@ -207,7 +255,7 @@ public class MobListener implements Listener {
         event.setCancelled(true);
     }
 
-    // 💊 PAS DE RÉGÉNÉRATION — bloque tout regen vanilla (sommeil, nourriture, potion…)
+    // 💊 PAS DE RÉGÉNÉRATION
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onRegen(EntityRegainHealthEvent event) {
         if (mobManager.getInstance(event.getEntity().getUniqueId()) == null) return;
@@ -220,7 +268,7 @@ public class MobListener implements Listener {
         event.setCancelled(true);
     }
 
-    // 🚫 PAS D'INTERACTION VILLAGEOIS (commerce, GUI)
+    // 🚫 PAS D'INTERACTION VILLAGEOIS
     @EventHandler
     public void onInteractEntity(PlayerInteractEntityEvent event) {
         if (event.getRightClicked() instanceof AbstractVillager) {
@@ -228,3 +276,6 @@ public class MobListener implements Listener {
         }
     }
 }
+
+
+

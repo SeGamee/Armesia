@@ -1,6 +1,7 @@
 package fr.segame.armesiaMobs.mobs;
 
 import fr.segame.armesiaMobs.ArmesiaMobs;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Entity;
@@ -32,9 +33,6 @@ public class MobSpawner {
             return;
         }
 
-        mob.setCustomName(data.getName());
-        mob.setCustomNameVisible(true);
-
         var maxHealthAttr = mob.getAttribute(Attribute.GENERIC_MAX_HEALTH);
         if (maxHealthAttr != null) {
             maxHealthAttr.setBaseValue(data.getHealth());
@@ -48,6 +46,10 @@ public class MobSpawner {
         }
 
         mob.setRemoveWhenFarAway(false);
+        mob.setCanPickupItems(false);
+
+        // ── Nom + vie ───────────────────────────────────────────────────────
+        applyMobName(mob, data);
 
         // ── Tags d'identification (session + persistant après redémarrage) ──
         mob.setMetadata("customMob", new FixedMetadataValue(ArmesiaMobs.getInstance(), true));
@@ -59,5 +61,17 @@ public class MobSpawner {
                 ArmesiaMobs.ZONE_ID_KEY, PersistentDataType.STRING, zoneId);
 
         mobManager.addInstance(new MobInstance(mob.getUniqueId(), data.getId(), zoneId));
+    }
+
+    // ── Applique le nom + indicateur de vie (utilisé au spawn et après dégâts) ──
+    public static void applyMobName(LivingEntity mob, MobData data) {
+        applyMobName(mob, data, (int) Math.ceil(mob.getHealth()));
+    }
+
+    public static void applyMobName(LivingEntity mob, MobData data, int currentHealth) {
+        String translatedName = org.bukkit.ChatColor.translateAlternateColorCodes('&', data.getName());
+        String fullName = translatedName + " §f| " + currentHealth + " §c❤";
+        mob.customName(LegacyComponentSerializer.legacySection().deserialize(fullName));
+        mob.setCustomNameVisible(true);
     }
 }

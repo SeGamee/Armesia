@@ -63,6 +63,7 @@ public class PlayersListeners implements Listener {
     public void onQuit(PlayerQuitEvent event) {
         Player joueur = event.getPlayer();
         Main.savePlayer(joueur);
+        Main.unloadPlayer(joueur);  // libère l'attachment Bukkit + cache mémoire
 
         TpaManager.cleanup(joueur.getUniqueId());
         MessageManager.cleanupPlayer(joueur.getUniqueId());
@@ -84,6 +85,14 @@ public class PlayersListeners implements Listener {
     @EventHandler
     public void onDeathMessage(PlayerDeathEvent event) {
         Player player = event.getEntity();
+
+        // Si la mort est causée par un joueur, KillListener gère le broadcast —
+        // on supprime le message générique pour éviter le doublon.
+        if (player.getKiller() != null) {
+            event.deathMessage(null);
+            return;
+        }
+
         if (player.getLastDamageCause() != null
                 && player.getLastDamageCause().getCause() == EntityDamageEvent.DamageCause.FALL) {
             event.deathMessage(Component.text()
