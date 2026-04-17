@@ -235,9 +235,6 @@ public class ReloadListener implements Listener {
 
         if (!reloadWeapon.equals(e.getWeaponTitle())) return;
 
-        // on capture la session qui vient de finir
-        int completedSession = reloadSession.getOrDefault(uuid, -1);
-
         // ── Rechargement balle par balle ? ─────────────────────────────────────
         // On vérifie si les munitions sont au maximum. Si non, c'est un rechargement
         // séquentiel (ex. sniper) : on annule silencieusement la barre pour laisser
@@ -253,17 +250,22 @@ public class ReloadListener implements Listener {
             return;
         }
 
-        // Chargeur plein → afficher "Terminé"
+        // Chargeur plein → afficher "Chargé" et libérer immédiatement les maps
+        // pour éviter que "Rechargement interrompu" s'affiche si le joueur change d'arme juste après
         String loadedMsg = Main.getInstance().getConfig().getString("messages.loaded");
         player.sendActionBar(color(loadedMsg));
 
+        // Retirer immédiatement le joueur du reload actif
+        BukkitTask finishedTask = reloadTasks.remove(uuid);
+        if (finishedTask != null) finishedTask.cancel();
+        reloadSlot.remove(uuid);
+        reloadWeapons.remove(uuid);
+        reloadSession.remove(uuid);
+
+        // Effacer l'action bar après 20 ticks
         Bukkit.getScheduler().runTaskLater(Main.getInstance(), () -> {
             if (!player.isOnline()) return;
-
-            // 🔥 on n'annule que si on est toujours sur la même session
-            if (reloadSession.getOrDefault(uuid, -2) == completedSession) {
-                cancelReload(player);
-            }
+            player.sendActionBar("");
         }, 20L);
     }
 

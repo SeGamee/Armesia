@@ -241,7 +241,7 @@ Plusieurs zones peuvent coexister par arme (sous des clés différentes : `Zone1
 | Clé | Type | Défaut | Description |
 |---|---|---|---|
 | `Enabled` | boolean | `false` | Active cette zone |
-| `Trigger` | string | `IMPACT` | Déclenchement : `IMPACT` ou `SHOOT` |
+| `Trigger` | string | `IMPACT` | Déclenchement : `IMPACT`, `SHOOT` ou `EXPLODE` (voir ci-dessous) |
 | `Location` | string | `IMPACT` | Position de la zone : `IMPACT`, `PLAYER` ou `SHOOT` |
 | `Shape` | string | `CYLINDER` | Forme : `CYLINDER` `SPHERE` `CUBE` |
 | `Radius` | double | `3.0` | Rayon de la zone |
@@ -266,50 +266,44 @@ Plusieurs zones peuvent coexister par arme (sous des clés différentes : `Zone1
 | `SPHERE` | Sphère (distance 3D) |
 | `CUBE` | Cube (±rayon XZ + hauteur Y) |
 
+### Déclencheurs de zone
+
+| Valeur      | Déclenchement de la zone |
+|-------------|-------------------------|
+| `IMPACT`    | À l'impact du projectile |
+| `SHOOT`     | Au tir (autour du joueur)|
+| `EXPLODE`   | Lorsqu'une explosion CrackShot se produit (ex : rocket, grenade, airstrike) |
+
 ### Locations
 
 | Valeur | Position de la zone |
 |---|---|
 | `IMPACT` | Là où le projectile atterrit *(défaut)* |
+| `EXPLODE` | À l'endroit de l'explosion (équivalent IMPACT pour Trigger: EXPLODE) |
 | `PLAYER` / `SHOOT` | Sur le joueur qui tire |
 
-### Exemple
+### Exemple : zone sur explosion
 
 ```yaml
-Zones:
-
-  # Zone de poison à l'impact
-  Poison:
-    Enabled: true
-    Trigger: IMPACT
-    Location: IMPACT
-    Shape: CYLINDER
-    Radius: 4
-    Height_Up: 2
-    Height_Down: 0.5
-    Duration: 200
-    Tick: 10
-    Particle: REDSTONE
-    Color: 100-200-0
-    Points_Surface: 20
-    Effects:
-      - POISON:100:1
-      - SLOW:60:0
-
-  # Zone de feu au tir (autour du joueur)
-  FeuTir:
-    Enabled: true
-    Trigger: SHOOT
-    Location: PLAYER
-    Shape: SPHERE
-    Radius: 3
-    Duration: 60
-    Tick: 5
-    Particle: FLAME
-    Points_Surface: 15
-    Effects:
-      - FIRE_RESISTANCE:80:0
-    Sound_Loop: ENTITY_BLAZE_BURN
+RocketLauncher:
+  Shoot_Projectile: ARROW
+  # ...
+  Zones:
+    ExplosionToxique:
+      Enabled: true
+      Trigger: EXPLODE
+      Location: EXPLODE
+      Shape: SPHERE
+      Radius: 6
+      Duration: 120
+      Tick: 10
+      Particle: REDSTONE
+      Color: 0-255-0
+      Points_Surface: 30
+      Effects:
+        - POISON:100:2
+        - SLOW:60:1
+      Sound: ENTITY_GENERIC_EXPLODE
 ```
 
 ---
