@@ -36,7 +36,10 @@ commands:
     description: "Gérer l'argent des joueurs (add/remove/set/reset)"
     usage: "/moneyadmin <add|remove|set|reset> <joueur> [montant]"
   tokens:
-    description: "Voir ou gérer les tokens"
+    description: "Voir ses tokens ou ceux d'un autre joueur (armesia.tokens.see)"
+  tokensadmin:
+    description: "Gérer les tokens des joueurs (add/remove/set/reset)"
+    usage: "/tokensadmin <add|remove|set|reset> <joueur> [montant]"
   pay:
     description: "Donner de l'argent à un joueur"
   stats:

@@ -110,8 +110,8 @@ public class EconomyCommand implements CommandExecutor {
                 return true;
             }
 
-            if (amount != Math.floor(amount) || Double.isInfinite(amount) || amount < 0) {
-                sender.sendMessage("§cLe montant doit être un nombre entier positif.");
+            if (Double.isInfinite(amount) || Double.isNaN(amount) || amount < 0) {
+                sender.sendMessage("§cLe montant doit être un nombre positif.");
                 return true;
             }
 
@@ -152,49 +152,54 @@ public class EconomyCommand implements CommandExecutor {
         // =========================
         if (cmd.getName().equalsIgnoreCase("tokens")) {
 
-            // /tokens
+            // /tokens — propre solde
             if (args.length == 0) {
                 if (!(sender instanceof Player player)) {
                     sender.sendMessage("§cCommande joueur uniquement.");
                     return true;
                 }
-
-                int tokens = eco.getTokens(player.getUniqueId());
-                sender.sendMessage("§bTokens: §f" + eco.formatTokens(tokens));
+                sender.sendMessage("§bTokens: §f" + eco.formatTokens(eco.getTokens(player.getUniqueId())));
                 return true;
             }
 
-            // /tokens <player>
-            if (args.length == 1) {
-                if (!Main.checkPerm(sender, "armesia.tokens.admin")) {
-                    sender.sendMessage("§cPas la permission.");
-                    return true;
-                }
-
-                OfflinePlayer target = Bukkit.getOfflinePlayer(args[0]);
-
-                if (!target.hasPlayedBefore()) {
-                    sender.sendMessage("§cJoueur inconnu.");
-                    return true;
-                }
-
-                int tokens = eco.getTokens(target.getUniqueId());
-                sender.sendMessage("§bTokens de " + target.getName() + ": §f" + eco.formatTokens(tokens));
+            // /tokens <joueur> — consulter le solde d'un autre
+            if (!Main.checkPerm(sender, "armesia.tokens.see")) {
+                sender.sendMessage("§cPas la permission.");
                 return true;
             }
 
-            // /tokens add/remove/set/reset
+            OfflinePlayer target = Bukkit.getOfflinePlayer(args[0]);
+            if (!target.hasPlayedBefore()) {
+                sender.sendMessage("§cJoueur inconnu.");
+                return true;
+            }
+
+            sender.sendMessage("§bTokens de §f" + target.getName() + "§b : §f"
+                    + eco.formatTokens(eco.getTokens(target.getUniqueId())));
+            return true;
+        }
+
+        // =========================
+        // /tokensadmin
+        // =========================
+        if (cmd.getName().equalsIgnoreCase("tokensadmin")) {
+
             if (!Main.checkPerm(sender, "armesia.tokens.admin")) {
                 sender.sendMessage("§cPas la permission.");
                 return true;
             }
 
-            String action = args[0];
+            if (args.length == 0) {
+                sender.sendMessage("§cUsage: /tokensadmin <add|remove|set|reset> <joueur> [montant]");
+                return true;
+            }
 
-            // /tokens reset <joueur> — ne requiert pas de montant
-            if (action.equalsIgnoreCase("reset")) {
+            String action = args[0].toLowerCase();
+
+            // /tokensadmin reset <joueur>
+            if (action.equals("reset")) {
                 if (args.length < 2) {
-                    sender.sendMessage("§cUsage: /tokens reset <joueur>");
+                    sender.sendMessage("§cUsage: /tokensadmin reset <joueur>");
                     return true;
                 }
                 OfflinePlayer target = Bukkit.getOfflinePlayer(args[1]);
@@ -207,21 +212,19 @@ public class EconomyCommand implements CommandExecutor {
                 return true;
             }
 
-            // /tokens add/remove/set <joueur> <montant>
+            // /tokensadmin add|remove|set <joueur> <montant>
             if (args.length < 3) {
-                sender.sendMessage("§cUsage: /tokens <add|remove|set|reset> <joueur> [montant]");
+                sender.sendMessage("§cUsage: /tokensadmin <add|remove|set|reset> <joueur> [montant]");
                 return true;
             }
 
             OfflinePlayer target = Bukkit.getOfflinePlayer(args[1]);
-
             if (!target.hasPlayedBefore()) {
                 sender.sendMessage("§cJoueur inconnu.");
                 return true;
             }
 
             int amount;
-
             try {
                 amount = Integer.parseInt(args[2]);
             } catch (Exception e) {
@@ -232,39 +235,30 @@ public class EconomyCommand implements CommandExecutor {
             UUID uuid = target.getUniqueId();
             int maxTokens = eco.getMaxTokens();
 
-            switch (action.toLowerCase()) {
-
-                case "add":
-                    int newTotal = eco.getTokens(uuid) + amount;
-                    if (newTotal > maxTokens) {
-                        sender.sendMessage("§cPlafond atteint (§f" + eco.formatTokens(maxTokens) + "§c). Solde de §f"
-                                + target.getName() + " §cplafonné.");
-                    }
+            switch (action) {
+                case "add" -> {
+                    if (eco.getTokens(uuid) + amount > maxTokens)
+                        sender.sendMessage("§cPlafond atteint (§f" + eco.formatTokens(maxTokens) + "§c). Solde plafonné.");
                     eco.addTokens(uuid, amount);
                     sender.sendMessage("§bAjouté §f" + eco.formatTokens(amount) + " §bà §f" + target.getName()
                             + "§b. Nouveau solde : §f" + eco.formatTokens(eco.getTokens(uuid)));
-                    break;
-
-                case "remove":
+                }
+                case "remove" -> {
                     if (!eco.removeTokens(uuid, amount)) {
-                        sender.sendMessage("§cPas assez de tokens.");
+                        sender.sendMessage("§cPas assez de tokens sur le compte de §f" + target.getName() + "§c.");
                         return true;
                     }
                     sender.sendMessage("§bRetiré §f" + eco.formatTokens(amount) + " §bà §f" + target.getName()
                             + "§b. Nouveau solde : §f" + eco.formatTokens(eco.getTokens(uuid)));
-                    break;
-
-                case "set":
-                    if (amount > maxTokens) {
+                }
+                case "set" -> {
+                    if (amount > maxTokens)
                         sender.sendMessage("§cMontant supérieur au plafond (§f" + eco.formatTokens(maxTokens) + "§c). Valeur plafonnée.");
-                    }
                     eco.setTokens(uuid, amount);
-                    sender.sendMessage("§bTokens de §f" + target.getName() + " §bdéfinis à §f" + eco.formatTokens(eco.getTokens(uuid)));
-                    break;
-
-                default:
-                    sender.sendMessage("§cAction inconnue. Usage: /tokens <add|remove|set|reset> <joueur> [montant]");
-                    break;
+                    sender.sendMessage("§bTokens de §f" + target.getName() + " §bdéfinis à §f"
+                            + eco.formatTokens(eco.getTokens(uuid)));
+                }
+                default -> sender.sendMessage("§cAction inconnue. Usage: /tokensadmin <add|remove|set|reset> <joueur> [montant]");
             }
 
             return true;
@@ -301,8 +295,8 @@ public class EconomyCommand implements CommandExecutor {
                 return true;
             }
 
-            if (amount != Math.floor(amount) || Double.isInfinite(amount)) {
-                sender.sendMessage("§cLe montant doit être un nombre entier.");
+            if (Double.isInfinite(amount) || Double.isNaN(amount)) {
+                sender.sendMessage("§cLe montant doit être un nombre positif.");
                 return true;
             }
 
@@ -331,3 +325,4 @@ public class EconomyCommand implements CommandExecutor {
         return true;
     }
 }
+

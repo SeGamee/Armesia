@@ -127,6 +127,7 @@ public final class Main extends JavaPlugin {
         getCommand("money").setExecutor(ecoCmd);
         getCommand("moneyadmin").setExecutor(ecoCmd);
         getCommand("tokens").setExecutor(ecoCmd);
+        getCommand("tokensadmin").setExecutor(ecoCmd);
         getCommand("pay").setExecutor(ecoCmd);
         getCommand("stats").setExecutor(new StatsCommand());
         getCommand("statsadmin").setExecutor(new StatsAdminCommand());

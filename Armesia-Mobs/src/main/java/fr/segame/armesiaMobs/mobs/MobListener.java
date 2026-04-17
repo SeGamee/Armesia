@@ -111,6 +111,9 @@ public class MobListener implements Listener {
     // 🗑️ DROPS — vide pour TOUS les mobs (vanilla ou custom)
     @EventHandler
     public void onDeath(EntityDeathEvent event) {
+        // Ne pas toucher aux drops des joueurs
+        if (event.getEntity() instanceof Player) return;
+
         // Toujours supprimer les drops et l'XP vanilla, peu importe le mob
         event.getDrops().clear();
         event.setDroppedExp(0);
@@ -276,6 +279,4 @@ public class MobListener implements Listener {
         }
     }
 }
-
-
 

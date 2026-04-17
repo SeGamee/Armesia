@@ -10,6 +10,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
@@ -56,10 +57,19 @@ public class ReloadListener implements Listener {
         UUID uuid = player.getUniqueId();
         if (!reloadTasks.containsKey(uuid)) return;
 
-        // Annule si le curseur est sur un slot de la hotbar (0–8),
-        // que ce soit un clic souris ou une touche clavier.
+        // Clic sur la hotbar (slot 0-8) → annule
         if (e.getSlot() >= 0 && e.getSlot() <= 8) {
             cancelReloadInterrupted(player);
+            return;
+        }
+
+        // Touche numérique depuis l'inventaire (NUMBER_KEY) qui cible le slot de reload → annule
+        if (e.getClick() == ClickType.NUMBER_KEY) {
+            int hotbarButton = e.getHotbarButton(); // 0-indexed
+            int currentReloadSlot = reloadSlot.getOrDefault(uuid, -1);
+            if (hotbarButton == currentReloadSlot) {
+                cancelReloadInterrupted(player);
+            }
         }
     }
 
@@ -176,12 +186,9 @@ public class ReloadListener implements Listener {
 
                 String currentWeapon = csUtility.getWeaponTitle(currentItem);
 
-                if (currentWeapon == null) {
-                    currentWeapon = weapon;
-                }
-
-                if (!currentWeapon.equals(weapon)) {
-                    // L'arme en main a changé
+                // Si l'item en main n'est plus une arme CrackShot ou a changé → annuler
+                // (CrackShot annule déjà son reload interne dans ce cas)
+                if (currentWeapon == null || !currentWeapon.equals(weapon)) {
                     cancelReloadInterrupted(player);
                     return;
                 }

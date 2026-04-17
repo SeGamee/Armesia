@@ -86,10 +86,9 @@ public class PlayersListeners implements Listener {
     public void onDeathMessage(PlayerDeathEvent event) {
         Player player = event.getEntity();
 
-        // Si la mort est causée par un joueur, KillListener gère le broadcast —
-        // on supprime le message générique pour éviter le doublon.
+        // Si la mort est causée par un joueur, KillListener (priorité HIGHEST) gère le message.
+        // On laisse le message vanilla intact ici — KillListener le nullifiera si nécessaire.
         if (player.getKiller() != null) {
-            event.deathMessage(null);
             return;
         }
 
