@@ -1,0 +1,18 @@
+name: Armesia-Level
+version: '$version'
+
+main: fr.segame.armesiaLevel.ArmesiaLevel
+api-version: '1.20'
+author: "SeGame"
+load: POSTWORLD
+
+commands:
+  level:
+    description: "Plugin de gestion de niveau"
+    permission: "armesia.level"
+    permission-message: "§cVous n'avez pas la permission."
+  reloadlevel:
+    description: "Recharge la configuration d'Armesia-Level"
+    permission: "armesia.level.admin"
+    permission-message: "§cVous n'avez pas la permission."
+    aliases: [rlevel]

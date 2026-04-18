@@ -1,0 +1,16 @@
+name: Armesia-CrackShotAddon
+version: '${version}'
+main: fr.segame.armesiaCrackShotAddon.Main
+api-version: '1.20'
+depend: [CrackShot]
+description: Addon Crackshot pour Armesia
+
+commands:
+  armesiacsa:
+    description: Reload du plugin Armesia CrackShot Addon
+    usage: /armesiacsa reload
+    permission: armesiacsa.reload
+
+permissions:
+  armesiacsa.reload:
+    default: op

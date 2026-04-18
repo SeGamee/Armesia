@@ -1,0 +1,145 @@
+name: Armesia-Mobs
+version: '$version'
+
+main: fr.segame.armesiaMobs.ArmesiaMobs
+api-version: '1.20'
+load: POSTWORLD
+
+commands:
+  mob:
+    description: "Gestion des mobs personnalisés"
+    permission: "armesia.mob"
+    permission-message: "§cVous n'avez pas la permission."
+    aliases: [ "mobs" ]
+  loot:
+    description: "Gestion des tables de loot"
+    permission: "armesia.loot"
+    permission-message: "§cVous n'avez pas la permission."
+    aliases: [ "loottable" ]
+  zone:
+    description: "Gestion des zones de spawn"
+    permission: "armesia.zone"
+    permission-message: "§cVous n'avez pas la permission."
+    aliases: [ "zones" ]
+  mobstats:
+    description: "Statistiques de kills des mobs"
+    permission: "armesia.mobstats"
+    permission-message: "§cVous n'avez pas la permission."
+    aliases: [ "mstats" ]
+
+permissions:
+
+  # ─── /mob ──────────────────────────────────────────────────────────────────
+  armesia.mob:
+    default: op
+    description: "Accès complet à /mob"
+    children:
+      armesia.mob.list:   true
+      armesia.mob.info:   true
+      armesia.mob.create: true
+      armesia.mob.delete: true
+      armesia.mob.set:    true
+      armesia.mob.spawn:  true
+  armesia.mob.list:
+    default: op
+    description: "/mob list — Lister les mobs"
+  armesia.mob.info:
+    default: op
+    description: "/mob info <id> — Voir les détails d'un mob"
+  armesia.mob.create:
+    default: op
+    description: "/mob create — Créer un mob"
+  armesia.mob.delete:
+    default: op
+    description: "/mob delete <id> — Supprimer un mob"
+  armesia.mob.set:
+    default: op
+    description: "/mob set <id> <prop> <val> — Modifier un mob"
+  armesia.mob.spawn:
+    default: op
+    description: "/mob spawn <id> <n> — Spawner un mob manuellement"
+
+  # ─── /loot ─────────────────────────────────────────────────────────────────
+  armesia.loot:
+    default: op
+    description: "Accès complet à /loot"
+    children:
+      armesia.loot.list:   true
+      armesia.loot.info:   true
+      armesia.loot.create: true
+      armesia.loot.delete: true
+      armesia.loot.add:    true
+      armesia.loot.remove: true
+  armesia.loot.list:
+    default: op
+    description: "/loot list — Lister les tables de loot"
+  armesia.loot.info:
+    default: op
+    description: "/loot info <table> — Voir le contenu d'une table"
+  armesia.loot.create:
+    default: op
+    description: "/loot create <table> — Créer une table"
+  armesia.loot.delete:
+    default: op
+    description: "/loot delete <table> — Supprimer une table"
+  armesia.loot.add:
+    default: op
+    description: "/loot add / addhand — Ajouter une entrée de loot"
+  armesia.loot.remove:
+    default: op
+    description: "/loot remove <table> <index> — Supprimer une entrée"
+
+  # ─── /zone ─────────────────────────────────────────────────────────────────
+  armesia.zone:
+    default: op
+    description: "Accès complet à /zone"
+    children:
+      armesia.zone.list:    true
+      armesia.zone.info:    true
+      armesia.zone.create:  true
+      armesia.zone.delete:  true
+      armesia.zone.manage:  true
+      armesia.zone.tp:      true
+      armesia.zone.check:   true
+      armesia.zone.debug:   true
+      armesia.zone.preview: true
+  armesia.zone.list:
+    default: op
+    description: "/zone list — Lister les zones"
+  armesia.zone.info:
+    default: op
+    description: "/zone info <id> — Voir les détails d'une zone"
+  armesia.zone.create:
+    default: op
+    description: "/zone create <id> — Créer une zone"
+  armesia.zone.delete:
+    default: op
+    description: "/zone delete <id> — Supprimer une zone"
+  armesia.zone.manage:
+    default: op
+    description: "pos1/pos2, addmob, removemob, setweight, set"
+  armesia.zone.tp:
+    default: op
+    description: "/zone tp <id> — Se téléporter au centre d'une zone"
+  armesia.zone.check:
+    default: op
+    description: "/zone check — Vérifier la zone actuelle"
+  armesia.zone.debug:
+    default: op
+    description: "/zone debug — Activer le mode debug des zones"
+  armesia.zone.preview:
+    default: op
+    description: "/zone preview <id> — Prévisualiser les bordures"
+
+  # ─── /mobstats ─────────────────────────────────────────────────────────────
+  armesia.mobstats:
+    default: true
+    description: "Voir ses propres statistiques de kills"
+  armesia.mobstats.others:
+    default: op
+    description: "Voir les statistiques d'autres joueurs"
+  armesia.mobstats.admin:
+    default: op
+    description: "Gérer les statistiques : reset, add, remove, top"
+    children:
+      armesia.mobstats.others: true

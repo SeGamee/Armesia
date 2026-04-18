@@ -1,0 +1,14 @@
+name: Armesia-Menu
+version: '1.0'
+main: fr.segame.armesiaMenu.ArmesiaMenu
+api-version: '1.20'
+depend : [Armesia, Armesia-Level]
+
+commands:
+  menu:
+    description: Ouvrir ou reload les menus
+    usage: /menu <id|reload>
+
+permissions:
+  armesia.menu.reload:
+    default: op
