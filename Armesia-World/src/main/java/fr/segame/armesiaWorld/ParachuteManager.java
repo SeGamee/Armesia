@@ -64,7 +64,7 @@ public class ParachuteManager {
         // 4. Titre initial
         showTitle(player, cityName);
 
-        final Particle.DustOptions whiteDust = new Particle.DustOptions(Color.WHITE, 1.3f);
+        // final Particle.DustOptions whiteDust = new Particle.DustOptions(Color.WHITE, 1.3f);
 
         // Tâche toutes les 2 ticks (0.1 s) pour un glissement fluide
         BukkitTask task = new BukkitRunnable() {
@@ -109,30 +109,30 @@ public class ParachuteManager {
                 }
                 player.setVelocity(vel);
 
-                // ─── Particules redstone blanche ──────────────────────────────
+                // Particules désactivées
                 // Dôme circulaire au-dessus du joueur (8 points)
-                for (int i = 0; i < 8; i++) {
-                    double angle = (Math.PI * 2.0 / 8) * i;
-                    player.getWorld().spawnParticle(Particle.REDSTONE,
-                            pLoc.getX() + Math.cos(angle) * 2.0,
-                            pLoc.getY() + 3.0,
-                            pLoc.getZ() + Math.sin(angle) * 2.0,
-                            1, 0, 0, 0, 0, whiteDust);
-                }
+                // for (int i = 0; i < 8; i++) {
+                //     double angle = (Math.PI * 2.0 / 8) * i;
+                //     player.getWorld().spawnParticle(Particle.REDSTONE,
+                //             pLoc.getX() + Math.cos(angle) * 2.0,
+                //             pLoc.getY() + 3.0,
+                //             pLoc.getZ() + Math.sin(angle) * 2.0,
+                //             1, 0, 0, 0, 0, whiteDust);
+                // }
                 // Centre du dôme
-                player.getWorld().spawnParticle(Particle.REDSTONE,
-                        pLoc.getX(), pLoc.getY() + 3.5, pLoc.getZ(),
-                        2, 0.4, 0.1, 0.4, 0, whiteDust);
+                // player.getWorld().spawnParticle(Particle.REDSTONE,
+                //         pLoc.getX(), pLoc.getY() + 3.5, pLoc.getZ(),
+                //         2, 0.4, 0.1, 0.4, 0, whiteDust);
 
                 // Sillage derrière le joueur
-                if (horiz.lengthSquared() > 0.001) {
-                    Vector behind = horiz.clone().normalize().multiply(-1.5);
-                    player.getWorld().spawnParticle(Particle.REDSTONE,
-                            pLoc.getX() + behind.getX(),
-                            pLoc.getY() + 1.2,
-                            pLoc.getZ() + behind.getZ(),
-                            3, 0.2, 0.15, 0.2, 0, whiteDust);
-                }
+                // if (horiz.lengthSquared() > 0.001) {
+                //     Vector behind = horiz.clone().normalize().multiply(-1.5);
+                //     player.getWorld().spawnParticle(Particle.REDSTONE,
+                //             pLoc.getX() + behind.getX(),
+                //             pLoc.getY() + 1.2,
+                //             pLoc.getZ() + behind.getZ(),
+                //             3, 0.2, 0.15, 0.2, 0, whiteDust);
+                // }
             }
         }.runTaskTimer(plugin, 10L, 2L);
 
@@ -159,9 +159,3 @@ public class ParachuteManager {
         );
     }
 }
-
-
-
-
-
-

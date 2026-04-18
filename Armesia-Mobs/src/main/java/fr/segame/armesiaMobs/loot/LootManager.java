@@ -65,7 +65,8 @@ public class LootManager {
     }
 
     /** @deprecated Préférer dropLoot(Location, tableId) — drop au sol */
-    public void applyLoot(Player player, String tableId) {
+    @Deprecated
+    public void giveLoot(Player player, String tableId) {
         List<LootData> loots = tables.get(tableId);
         if (loots == null) return;
 

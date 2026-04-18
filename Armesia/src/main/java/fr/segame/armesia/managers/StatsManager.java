@@ -1,8 +1,9 @@
 package fr.segame.armesia.managers;
 
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.ConfigurationSection;
 
-import java.util.UUID;
+import java.util.*;;
 
 public class StatsManager {
 
@@ -84,6 +85,40 @@ public class StatsManager {
             formatted = String.format("%.1f", ratio);
         }
         return formatted;
+    }
+
+    // ===== LEADERBOARDS =====
+
+    public List<Map.Entry<UUID, Integer>> getTopKills(int limit) {
+        return getTop("kills", limit);
+    }
+
+    public List<Map.Entry<UUID, Integer>> getTopDeaths(int limit) {
+        return getTop("deaths", limit);
+    }
+
+    public List<Map.Entry<UUID, Integer>> getTopKillstreak(int limit) {
+        return getTop("killstreak", limit);
+    }
+
+    public List<Map.Entry<UUID, Integer>> getTopBestKillstreak(int limit) {
+        return getTop("bestkillstreak", limit);
+    }
+
+    private List<Map.Entry<UUID, Integer>> getTop(String stat, int limit) {
+        ConfigurationSection players = config.getConfigurationSection("players");
+        List<Map.Entry<UUID, Integer>> list = new ArrayList<>();
+        if (players != null) {
+            for (String key : players.getKeys(false)) {
+                try {
+                    UUID uuid = UUID.fromString(key);
+                    int val = config.getInt("players." + key + "." + stat, 0);
+                    if (val > 0) list.add(Map.entry(uuid, val));
+                } catch (IllegalArgumentException ignored) {}
+            }
+        }
+        list.sort((a, b) -> b.getValue() - a.getValue());
+        return list.subList(0, Math.min(limit, list.size()));
     }
 
 }

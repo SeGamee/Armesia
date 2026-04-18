@@ -1,8 +1,9 @@
 package fr.segame.armesia.managers;
 
 import fr.segame.armesia.Main;
+import org.bukkit.configuration.ConfigurationSection;
 
-import java.util.UUID;
+import java.util.*;;
 
 public class EconomyManager {
 
@@ -76,5 +77,39 @@ public class EconomyManager {
 
     public boolean hasTokens(UUID uuid, int amount) {
         return getTokens(uuid) >= amount;
+    }
+
+    // ---------- LEADERBOARDS ----------
+
+    public List<Map.Entry<UUID, Double>> getTopMoney(int limit) {
+        ConfigurationSection players = plugin.getPlayersConfig().getConfigurationSection("players");
+        List<Map.Entry<UUID, Double>> list = new ArrayList<>();
+        if (players != null) {
+            for (String key : players.getKeys(false)) {
+                try {
+                    UUID uuid = UUID.fromString(key);
+                    double val = plugin.getPlayersConfig().getDouble("players." + key + ".money", 0.0);
+                    if (val > 0) list.add(Map.entry(uuid, val));
+                } catch (IllegalArgumentException ignored) {}
+            }
+        }
+        list.sort((a, b) -> Double.compare(b.getValue(), a.getValue()));
+        return list.subList(0, Math.min(limit, list.size()));
+    }
+
+    public List<Map.Entry<UUID, Integer>> getTopTokens(int limit) {
+        ConfigurationSection players = plugin.getPlayersConfig().getConfigurationSection("players");
+        List<Map.Entry<UUID, Integer>> list = new ArrayList<>();
+        if (players != null) {
+            for (String key : players.getKeys(false)) {
+                try {
+                    UUID uuid = UUID.fromString(key);
+                    int val = plugin.getPlayersConfig().getInt("players." + key + ".tokens", 0);
+                    if (val > 0) list.add(Map.entry(uuid, val));
+                } catch (IllegalArgumentException ignored) {}
+            }
+        }
+        list.sort((a, b) -> b.getValue() - a.getValue());
+        return list.subList(0, Math.min(limit, list.size()));
     }
 }

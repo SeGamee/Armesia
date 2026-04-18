@@ -69,6 +69,7 @@ public final class Main extends JavaPlugin {
 
         statsManager      = new StatsManager(playerDataManager.getPlayersConfig());
         statsAPI          = new StatsAPI(statsManager);
+        Bukkit.getServicesManager().register(StatsAPI.class, statsAPI, this, ServicePriority.Normal);
 
         homeManager       = new HomeManager(this);
         kitManager        = new KitManager(this);

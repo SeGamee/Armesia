@@ -4,7 +4,9 @@ import fr.segame.armesia.managers.EconomyManager;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -85,11 +87,25 @@ public class EconomyImpl implements EconomyAPI {
 
     @Override
     public String formatMoney(double amount) {
-        return format.format(amount) + " $";
+        double floored = Math.floor(amount * 100.0) / 100.0;
+        return format.format(floored) + " $";
     }
 
     @Override
     public String formatTokens(int amount) {
-        return format.format(amount) + " ⛃";
+        // Les tokens sont des entiers, mais on applique le même format pour cohérence
+        return format.format(amount) + " 🪙";
+    }
+
+    // ---------- LEADERBOARDS ----------
+
+    @Override
+    public List<Map.Entry<UUID, Double>> getTopMoney(int limit) {
+        return manager.getTopMoney(limit);
+    }
+
+    @Override
+    public List<Map.Entry<UUID, Integer>> getTopTokens(int limit) {
+        return manager.getTopTokens(limit);
     }
 }

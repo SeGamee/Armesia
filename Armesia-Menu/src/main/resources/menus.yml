@@ -1,0 +1,302 @@
+menus:
+
+  # =========================
+  # 🏠 MENU PRINCIPAL
+  # =========================
+  main:
+    title: "&6&lARMESIA"
+    size: 27
+
+    items:
+
+      profile:
+        material: PLAYER_HEAD
+        name: "&e&lProfil"
+        slot: 10
+
+        lore:
+          - "&7Groupe: &f%group%"
+          - "&7Argent: &e%money%"
+          - "&7Tokens: &6%tokens%"
+          - "&7Niveau: &b%level%"
+          - ""
+          - "&7Kills: &c%kills%"
+          - "&7Morts: &c%deaths%"
+          - "&7Ratio: &e%ratio%"
+          - "&7Killstreak: &6%killstreak%"
+          - "&7Best KS: &d%bestkillstreak%"
+          - ""
+          - "&7Mobs tués: &a%mob_kills_total%"
+
+      leaderboard:
+        material: PAPER
+        name: "&b&lClassements"
+        slot: 12
+
+        lore:
+          - "&7Top Argent:"
+          - "&e#1 &7%top_money_name_1% &e%top_money_1%"
+          - "&e#2 &7%top_money_name_2% &e%top_money_2%"
+          - "&e#3 &7%top_money_name_3% &e%top_money_3%"
+          - ""
+          - "&7Top Kills:"
+          - "&c#1 &7%top_kills_name_1% &c%top_kills_1%"
+          - "&c#2 &7%top_kills_name_2% &c%top_kills_2%"
+          - "&c#3 &7%top_kills_name_3% &c%top_kills_3%"
+          - ""
+          - "&7Top Best Killstreak:"
+          - "&d#1 &7%top_bestkillstreak_name_1% &d%top_bestkillstreak_1%"
+          - "&d#2 &7%top_bestkillstreak_name_2% &d%top_bestkillstreak_2%"
+          - "&d#3 &7%top_bestkillstreak_name_3% &d%top_bestkillstreak_3%"
+          - ""
+          - "&7Clique pour actualiser"
+
+        actions:
+          - type: refresh
+            click: LEFT
+
+      shop:
+        material: DIAMOND
+        name: "&b&lBoutique"
+        slot: 14
+
+        lore:
+          - "&7Achète des items"
+
+        actions:
+          - type: open_menu
+            menu: shop
+            click: LEFT
+
+      utilities:
+        material: ENDER_CHEST
+        name: "&d&lUtilitaires"
+        slot: 16
+
+        lore:
+          - "&7Clic gauche: EnderChest"
+          - "&7Clic droit: Craft"
+
+        actions:
+          - type: close
+            click: LEFT
+          - type: command
+            command: "enderchest"
+            click: LEFT
+
+          - type: close
+            click: RIGHT
+          - type: command
+            command: "craft"
+            click: RIGHT
+
+      reward:
+        material: CHEST
+        name: "&a&lRécompense quotidienne"
+        slot: 22
+
+        lore:
+          - "&7Clique pour récupérer"
+
+          - condition:
+              type: not_claimed
+              key: daily
+            lore:
+              - "&a✔ Disponible"
+
+          - condition:
+              type: not_claimed
+              key: daily
+            inverse: true
+            lore:
+              - "&c✘ Déjà récupéré"
+
+        conditions:
+          - type: not_claimed
+            key: daily
+
+        fail-actions:
+          - type: message
+            message: "&cDéjà récupéré"
+            click: LEFT
+
+        actions:
+          - type: add_money
+            amount: 1000
+            click: LEFT
+
+          - type: add_tokens
+            amount: 50
+            click: LEFT
+
+          - type: mark_claimed
+            key: daily
+            click: LEFT
+
+          - type: message
+            message: "&aRécompense récupérée"
+            click: LEFT
+
+      vip:
+        material: NETHER_STAR
+        name: "&d&lContenu VIP"
+        slot: 24
+
+        lore:
+          - "&7Réservé aux VIP"
+
+          - condition:
+              type: permission
+              permission: armesia.vip
+            lore:
+              - "&a✔ Débloqué"
+
+          - condition:
+              type: permission
+              permission: armesia.vip
+            inverse: true
+            lore:
+              - "&c✘ VIP requis"
+
+        conditions:
+          - type: permission
+            permission: armesia.vip
+
+        fail-actions:
+          - type: message
+            message: "&cTu n'es pas VIP"
+            click: LEFT
+
+        actions:
+          - type: give_item
+            material: DIAMOND
+            amount: 5
+            click: LEFT
+
+          - type: message
+            message: "&dObjet VIP reçu"
+            click: LEFT
+
+
+  # =========================
+  # 🛒 SHOP
+  # =========================
+  shop:
+    title: "&b&lBOUTIQUE"
+    size: 27
+
+    items:
+
+      money_item:
+        material: DIAMOND
+        name: "&bDiamant"
+        slot: 11
+
+        lore:
+          - "&7Prix: &e1000$"
+          - "&7Argent: &e%money%"
+
+        conditions:
+          - type: money
+            min: 1000
+
+        fail-actions:
+          - type: message
+            message: "&cPas assez d'argent"
+            click: RIGHT
+
+        actions:
+          - type: take_money
+            amount: 1000
+            click: RIGHT
+
+          - type: give_item
+            material: DIAMOND
+            amount: 1
+            click: RIGHT
+
+          - type: message
+            message: "&aAchat réussi"
+            click: RIGHT
+
+
+      token_item:
+        material: GOLD_INGOT
+        name: "&6Item Tokens"
+        slot: 13
+
+        lore:
+          - "&7Prix: &6100 tokens"
+          - "&7Tokens: &6%tokens%"
+
+        conditions:
+          - type: tokens
+            min: 100
+
+        fail-actions:
+          - type: message
+            message: "&cPas assez de tokens"
+            click: RIGHT
+
+        actions:
+          - type: take_tokens
+            amount: 100
+            click: RIGHT
+
+          - type: give_item
+            material: EMERALD
+            amount: 5
+            click: RIGHT
+
+          - type: message
+            message: "&aAchat réussi"
+            click: RIGHT
+
+
+      premium_item:
+        material: EMERALD
+        name: "&aItem Premium"
+        slot: 15
+
+        lore:
+          - "&7Prix: &e500$ &7+ &650 tokens"
+
+        conditions:
+          - type: money
+            min: 500
+          - type: tokens
+            min: 50
+
+        fail-actions:
+          - type: message
+            message: "&cConditions non remplies"
+            click: RIGHT
+
+        actions:
+          - type: take_money
+            amount: 500
+            click: RIGHT
+
+          - type: take_tokens
+            amount: 50
+            click: RIGHT
+
+          - type: give_item
+            material: DIAMOND
+            amount: 2
+            click: RIGHT
+
+          - type: message
+            message: "&aAchat premium réussi"
+            click: RIGHT
+
+
+      back:
+        material: BARRIER
+        name: "&cRetour"
+        slot: 22
+
+        actions:
+          - type: open_menu
+            menu: main
+            click: LEFT"

@@ -1,5 +1,7 @@
 package fr.segame.armesia.api;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -26,4 +28,8 @@ public interface EconomyAPI {
     // ---------- FORMAT ----------
     String formatMoney(double amount);
     String formatTokens(int amount);
+
+    // ---------- LEADERBOARDS ----------
+    List<Map.Entry<UUID, Double>> getTopMoney(int limit);
+    List<Map.Entry<UUID, Integer>> getTopTokens(int limit);
 }

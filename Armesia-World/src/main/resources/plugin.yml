@@ -11,7 +11,8 @@ commands:
     usage: /world <create|teleport|list> [args...]
     permission: armesia.world.use
   spawn:
-    description: Se téléporter au spawn
+    description: Se téléporter au spawn (ou téléporter un autre joueur)
+    usage: /spawn [joueur]
     usage: /spawn
     permission: armesia.world.spawn
   setspawn:
@@ -32,6 +33,9 @@ permissions:
     description: Gérer les mondes
     default: op
   armesia.world.setspawn:
+    default: op
+  armesia.world.spawn.other:
+    description: Téléporter un autre joueur au spawn via /spawn <joueur>
     description: Définir le spawn global
     default: op
   armesia.world.mapzone:
